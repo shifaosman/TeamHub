@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: teamhub-mongo-prod
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: teamhub
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - teamhub-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: teamhub-redis-prod
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - teamhub-network
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: teamhub-api-prod
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: ${MONGODB_URI}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      USE_LOCAL_STORAGE: ${USE_LOCAL_STORAGE:-false}
+      APP_URL: ${APP_URL}
+      API_URL: ${API_URL}
+      PORT: 3000
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - teamhub-network
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: teamhub-web-prod
+    restart: always
+    ports:
+      - "80:5173"
+    environment:
+      VITE_API_URL: ${API_URL}/api
+      VITE_WS_URL: ${WS_URL:-ws://api:3000}
+    depends_on:
+      - api
+    networks:
+      - teamhub-network
+
+volumes:
+  mongo_data:
+  redis_data:
+
+networks:
+  teamhub-network:
+    driver: bridge

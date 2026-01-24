@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: teamhub-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: teamhub
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - teamhub-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: teamhub-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - teamhub-network
+    command: redis-server --appendonly yes
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: teamhub-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      MONGODB_URI: mongodb://admin:admin123@mongo:27017/teamhub?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your-super-secret-refresh-key-change-in-production}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      USE_LOCAL_STORAGE: ${USE_LOCAL_STORAGE:-true}
+      PORT: 3000
+    volumes:
+      - ./apps/api:/app
+      - /app/node_modules
+      - ./storage:/app/storage
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - teamhub-network
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: teamhub-web
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3000
+      VITE_WS_URL: ws://localhost:3000
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+    depends_on:
+      - api
+    networks:
+      - teamhub-network
+
+volumes:
+  mongo_data:
+  redis_data:
+
+networks:
+  teamhub-network:
+    driver: bridge
