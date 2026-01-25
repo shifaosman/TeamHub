@@ -7,13 +7,13 @@ export type SessionDocument = Session & Document;
 @Schema({ timestamps: true })
 export class Session {
   @Prop({ required: true, index: true })
-  userId: string;
+  userId!: string;
 
   @Prop({ required: true })
-  token: string;
+  token!: string;
 
   @Prop({ required: true, index: true })
-  refreshToken: string;
+  refreshToken!: string;
 
   @Prop()
   ipAddress?: string;
@@ -21,16 +21,18 @@ export class Session {
   @Prop()
   userAgent?: string;
 
-  @Prop({ default: SessionStatus.ACTIVE, enum: SessionStatus })
-  status: SessionStatus;
+  @Prop({ type: String, enum: Object.values(SessionStatus), default: SessionStatus.ACTIVE })
+  status!: SessionStatus;
 
   @Prop({ required: true })
-  expiresAt: Date;
+  expiresAt!: Date;
+
+  createdAt!: Date;
+  updatedAt!: Date;
 }
 
 export const SessionSchema = SchemaFactory.createForClass(Session);
 
 // Indexes for performance
 SessionSchema.index({ userId: 1, status: 1 });
-SessionSchema.index({ refreshToken: 1 });
 SessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

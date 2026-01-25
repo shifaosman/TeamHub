@@ -1,0 +1,19 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString, MinLength, MaxLength, Matches } from 'class-validator';
+
+export class CreateOrganizationDto {
+  @ApiProperty({ example: 'Acme Corp' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  declare name: string;
+
+  @ApiProperty({ example: 'acme-corp' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(50)
+  @Matches(/^[a-z0-9-]+$/, {
+    message: 'Slug can only contain lowercase letters, numbers, and hyphens',
+  })
+  declare slug: string;
+}

@@ -1,7 +1,7 @@
 export class CreateSessionDto {
-  userId: string;
-  token: string;
-  refreshToken: string;
-  ipAddress?: string;
-  userAgent?: string;
+  declare userId: string;
+  declare token: string;
+  declare refreshToken: string;
+  declare ipAddress?: string;
+  declare userAgent?: string;
 }

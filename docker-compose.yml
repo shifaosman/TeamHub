@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mongo:
     image: mongo:7.0
@@ -51,8 +49,9 @@ services:
       USE_LOCAL_STORAGE: ${USE_LOCAL_STORAGE:-true}
       PORT: 3000
     volumes:
-      - ./apps/api:/app
+      - .:/app
       - /app/node_modules
+      - /app/apps/api/node_modules
       - ./storage:/app/storage
     depends_on:
       - mongo
@@ -72,8 +71,9 @@ services:
       VITE_API_URL: http://localhost:3000
       VITE_WS_URL: ws://localhost:3000
     volumes:
-      - ./apps/web:/app
+      - .:/app
       - /app/node_modules
+      - /app/apps/web/node_modules
     depends_on:
       - api
     networks:

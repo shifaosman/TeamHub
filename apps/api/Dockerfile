@@ -1,13 +1,14 @@
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 WORKDIR /app
 
 # Install dependencies
 FROM base AS dependencies
 COPY package*.json ./
+COPY tsconfig.json ./
 COPY apps/api/package*.json ./apps/api/
 COPY packages/shared/package*.json ./packages/shared/
-RUN npm ci
+RUN npm ci --include=dev
 
 # Build shared package
 FROM dependencies AS build-shared

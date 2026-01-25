@@ -5,5 +5,5 @@ export class RefreshTokenDto {
   @ApiProperty()
   @IsString()
   @MinLength(1, { message: 'Refresh token is required' })
-  refreshToken: string;
+  declare refreshToken: string;
 }

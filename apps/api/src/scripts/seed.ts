@@ -1,10 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { UsersService } from '../users/users.service';
+import { WorkspacesService } from '../workspaces/workspaces.service';
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
   const usersService = app.get(UsersService);
+  const workspacesService = app.get(WorkspacesService);
 
   console.log('🌱 Seeding database...');
 
@@ -45,6 +47,38 @@ async function bootstrap() {
       console.log(`✅ Member user created: ${memberEmail} / Member123!`);
     } else {
       console.log('Member user already exists');
+    }
+
+    // Create demo organization and workspace
+    console.log('Creating demo organization and workspace...');
+    try {
+      const org = await workspacesService.createOrganization(admin._id.toString(), {
+        name: 'Demo Organization',
+        slug: 'demo-org',
+      });
+      console.log(`✅ Organization created: ${org.name}`);
+
+      const workspace = await workspacesService.createWorkspace(admin._id.toString(), {
+        organizationId: org._id.toString(),
+        name: 'General Workspace',
+        slug: 'general',
+        description: 'Main workspace for the demo organization',
+      });
+      console.log(`✅ Workspace created: ${workspace.name}`);
+
+      // Add member user to workspace
+      const memberWorkspaces = await workspacesService.getUserWorkspaces(member._id.toString());
+      if (memberWorkspaces.length === 0) {
+        // Create an invite and accept it for the member
+        const invite = await workspacesService.inviteToWorkspace(
+          workspace._id.toString(),
+          admin._id.toString(),
+          { email: memberEmail, role: 'member' as any }
+        );
+        console.log(`✅ Invite created for member user`);
+      }
+    } catch (error: any) {
+      console.log(`⚠️  Organization/Workspace may already exist: ${error.message}`);
     }
 
     console.log('\n📋 Demo Credentials:');

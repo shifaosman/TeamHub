@@ -4,29 +4,29 @@ import { IsEmail, IsString, MinLength, MaxLength, IsOptional } from 'class-valid
 export class CreateUserDto {
   @ApiProperty()
   @IsEmail()
-  email: string;
+  declare email: string;
 
   @ApiProperty()
   @IsString()
   @MinLength(3)
   @MaxLength(30)
-  username: string;
+  declare username: string;
 
   @ApiProperty()
   @IsString()
   @MinLength(8)
   @MaxLength(100)
-  password: string;
+  declare password: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   @MaxLength(50)
-  firstName?: string;
+  declare firstName?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   @MaxLength(50)
-  lastName?: string;
+  declare lastName?: string;
 }

@@ -32,18 +32,20 @@ import configuration from './config/configuration';
     }),
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        ttl: configService.get<number>('RATE_LIMIT_TTL', 60),
-        limit: configService.get<number>('RATE_LIMIT_MAX', 100),
-      }),
       inject: [ConfigService],
+      useFactory: (configService: ConfigService) => [
+        {
+          ttl: configService.get<number>('rateLimit.ttl', 60),
+          limit: configService.get<number>('rateLimit.max', 100),
+        },
+      ],
     }),
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         connection: {
-          host: configService.get<string>('REDIS_HOST', 'localhost'),
-          port: configService.get<number>('REDIS_PORT', 6379),
+          host: configService.get<string>('redis.host', 'localhost'),
+          port: configService.get<number>('redis.port', 6379),
         },
       }),
       inject: [ConfigService],

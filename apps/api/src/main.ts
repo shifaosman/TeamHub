@@ -2,13 +2,15 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import compression from 'compression';
+import { join } from 'path';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   const configService = app.get(ConfigService);
 
@@ -17,8 +19,11 @@ async function bootstrap() {
   app.use(compression());
 
   // CORS
+  const nodeEnv = configService.get('NODE_ENV', 'development');
   app.enableCors({
-    origin: configService.get('APP_URL') || 'http://localhost:5173',
+    origin: nodeEnv === 'production' 
+      ? configService.get('APP_URL') || 'http://localhost:5173'
+      : true, // Allow all origins in development
     credentials: true,
   });
 
@@ -40,6 +45,12 @@ async function bootstrap() {
   // API prefix
   app.setGlobalPrefix('api');
 
+  // Serve static files for local uploads
+  const uploadsPath = join(process.cwd(), 'uploads');
+  app.useStaticAssets(uploadsPath, {
+    prefix: '/uploads',
+  });
+
   // Swagger documentation
   const config = new DocumentBuilder()
     .setTitle('TeamHub API')
@@ -60,10 +71,19 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document);
 
   const port = configService.get('PORT') || 3000;
-  await app.listen(port);
-
-  console.log(`🚀 API is running on: http://localhost:${port}`);
-  console.log(`📚 Swagger docs: http://localhost:${port}/docs`);
+  try {
+    await app.listen(port);
+    console.log(`🚀 API is running on: http://localhost:${port}`);
+    console.log(`📚 Swagger docs: http://localhost:${port}/docs`);
+  } catch (error: any) {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${port} is already in use!`);
+      console.error(`   Please free port ${port} or change PORT in .env file`);
+      console.error(`   Run: .\\kill-port-3000.ps1 (as Administrator)`);
+      process.exit(1);
+    }
+    throw error;
+  }
 }
 
 bootstrap();

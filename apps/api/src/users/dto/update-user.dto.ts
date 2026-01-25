@@ -6,16 +6,16 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   @MaxLength(50)
-  firstName?: string;
+  declare firstName?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   @MaxLength(50)
-  lastName?: string;
+  declare lastName?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  avatar?: string;
+  declare avatar?: string;
 }

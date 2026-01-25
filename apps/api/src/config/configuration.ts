@@ -1,12 +1,12 @@
 export default () => ({
-  port: parseInt(process.env.PORT, 10) || 3000,
+  port: parseInt(process.env.PORT ?? '3000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   mongodb: {
     uri: process.env.MONGODB_URI,
   },
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT, 10) || 6379,
+    port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
   },
   jwt: {
     secret: process.env.JWT_SECRET,
@@ -30,7 +30,7 @@ export default () => ({
     apiUrl: process.env.API_URL || 'http://localhost:3000',
   },
   rateLimit: {
-    ttl: parseInt(process.env.RATE_LIMIT_TTL, 10) || 60,
-    max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100,
+    ttl: parseInt(process.env.RATE_LIMIT_TTL ?? '60', 10),
+    max: parseInt(process.env.RATE_LIMIT_MAX ?? '100', 10),
   },
 });

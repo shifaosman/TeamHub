@@ -16,8 +16,10 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
+    "types": ["vite/client"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@teamhub/shared": ["../../packages/shared/src/index"]
     }
   },
   "include": ["src"],

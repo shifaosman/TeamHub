@@ -19,7 +19,8 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@teamhub/shared": ["../../packages/shared/src/index"]
     }
   },
   "include": ["src/**/*"],

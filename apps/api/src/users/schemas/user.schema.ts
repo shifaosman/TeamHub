@@ -1,19 +1,19 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, HydratedDocument } from 'mongoose';
 import { UserRole } from '@teamhub/shared';
 
-export type UserDocument = User & Document;
+export type UserDocument = HydratedDocument<User>;
 
 @Schema({ timestamps: true })
 export class User {
   @Prop({ required: true, unique: true, lowercase: true, trim: true })
-  email: string;
+  email!: string;
 
   @Prop({ required: true, unique: true, trim: true })
-  username: string;
+  username!: string;
 
   @Prop({ required: true })
-  password: string;
+  password!: string;
 
   @Prop()
   firstName?: string;
@@ -25,10 +25,10 @@ export class User {
   avatar?: string;
 
   @Prop({ default: false })
-  isEmailVerified: boolean;
+  isEmailVerified!: boolean;
 
-  @Prop({ default: UserRole.MEMBER })
-  role: UserRole;
+  @Prop({ type: String, enum: Object.values(UserRole), default: UserRole.MEMBER })
+  role!: UserRole;
 
   @Prop()
   emailVerificationToken?: string;
@@ -41,12 +41,13 @@ export class User {
 
   @Prop({ default: Date.now })
   lastLoginAt?: Date;
+
+  createdAt!: Date;
+  updatedAt!: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
 // Indexes for performance
-UserSchema.index({ email: 1 });
-UserSchema.index({ username: 1 });
 UserSchema.index({ emailVerificationToken: 1 });
 UserSchema.index({ passwordResetToken: 1 });
