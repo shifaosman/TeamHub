@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useChannels } from '@/hooks/useChannels';
+import { Button } from '@/components/ui/button';
 
 interface ChannelListProps {
   workspaceId: string;

@@ -8,6 +8,7 @@ import compression from 'compression';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -41,6 +42,17 @@ async function bootstrap() {
 
   // Global exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
+
+  // Global interceptors
+  app.useGlobalInterceptors(new LoggingInterceptor());
+  
+  // Request timeout (30 seconds)
+  app.use((req: any, res: any, next: any) => {
+    req.setTimeout(30000, () => {
+      res.status(408).json({ message: 'Request timeout' });
+    });
+    next();
+  });
 
   // API prefix
   app.setGlobalPrefix('api');

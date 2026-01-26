@@ -62,4 +62,73 @@ export class UsersService {
   async validatePassword(user: UserDocument, password: string): Promise<boolean> {
     return bcrypt.compare(password, user.password);
   }
+
+  async generateVerificationToken(): Promise<string> {
+    const crypto = require('crypto');
+    return crypto.randomBytes(32).toString('hex');
+  }
+
+  async generatePasswordResetToken(): Promise<string> {
+    const crypto = require('crypto');
+    return crypto.randomBytes(32).toString('hex');
+  }
+
+  async setVerificationToken(email: string, token: string): Promise<void> {
+    await this.userModel.updateOne(
+      { email: email.toLowerCase() },
+      { emailVerificationToken: token }
+    ).exec();
+  }
+
+  async verifyEmail(token: string): Promise<UserDocument> {
+    const user = await this.userModel.findOne({ emailVerificationToken: token }).exec();
+    if (!user) {
+      throw new NotFoundException('Invalid or expired verification token');
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationToken = undefined;
+    return user.save();
+  }
+
+  async setPasswordResetToken(email: string, token: string): Promise<void> {
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour expiry
+
+    await this.userModel.updateOne(
+      { email: email.toLowerCase() },
+      {
+        passwordResetToken: token,
+        passwordResetExpires: expiresAt,
+      }
+    ).exec();
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const user = await this.userModel.findOne({
+      passwordResetToken: token,
+      passwordResetExpires: { $gt: new Date() },
+    }).exec();
+
+    if (!user) {
+      throw new NotFoundException('Invalid or expired password reset token');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+  }
+
+  async findByVerificationToken(token: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ emailVerificationToken: token }).exec();
+  }
+
+  async findByPasswordResetToken(token: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({
+      passwordResetToken: token,
+      passwordResetExpires: { $gt: new Date() },
+    }).exec();
+  }
 }

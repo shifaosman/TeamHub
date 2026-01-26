@@ -4,69 +4,70 @@ import { useWorkspaces, useOrganizations } from '@/hooks/useWorkspaces';
 import { useChannels } from '@/hooks/useChannels';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { Button } from '@/components/ui/button';
-import { WorkspaceSelector } from '@/components/workspace/WorkspaceSelector';
-import { ChannelList } from '@/components/channels/ChannelList';
-import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { useMessageNotifications } from '@/hooks/useMessageNotifications';
 
 export function DashboardPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const { data: workspaces, isLoading: workspacesLoading } = useWorkspaces();
-  const { data: organizations, isLoading: orgsLoading } = useOrganizations();
+  const { user } = useAuth();
+  const { data: workspaces, isLoading: workspacesLoading, error: workspacesError } = useWorkspaces();
+  const { data: organizations, isLoading: orgsLoading, error: orgsError } = useOrganizations();
   const { currentWorkspace } = useWorkspaceStore();
-  const { data: channels } = useChannels(currentWorkspace?._id || '');
+  const { data: channels, error: channelsError } = useChannels(currentWorkspace?._id || '');
+  
+  // Enable real-time message notifications
+  useMessageNotifications();
+
+  // Debug logging (remove in production)
+  if (import.meta.env.DEV) {
+    console.log('DashboardPage render:', {
+      user,
+      workspaces,
+      organizations,
+      currentWorkspace,
+      channels,
+      workspacesLoading,
+      orgsLoading,
+      workspacesError,
+      orgsError,
+      channelsError,
+    });
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-gray-600">Not authenticated. Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-900">TeamHub</h1>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          <WorkspaceSelector />
-          {currentWorkspace && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Channels
-                </h3>
-                <Link to={`/workspaces/${currentWorkspace._id}/channels/new`}>
-                  <Button size="sm" variant="ghost">+</Button>
-                </Link>
-              </div>
-              <ChannelList workspaceId={currentWorkspace._id} />
-            </div>
+    <MainLayout>
+      <header className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
+        <div className="px-6 py-4">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+            {currentWorkspace ? currentWorkspace.name : 'Dashboard'}
+          </h2>
+          {currentWorkspace?.description && (
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{currentWorkspace.description}</p>
           )}
         </div>
-        <div className="p-4 border-t border-gray-200">
-          <div className="text-sm text-gray-600 mb-2">{user?.username}</div>
-          <Button onClick={logout} variant="outline" className="w-full">
-            Logout
-          </Button>
-        </div>
-      </aside>
+      </header>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="px-6 py-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold text-gray-900">
-                {currentWorkspace ? currentWorkspace.name : 'Dashboard'}
-              </h2>
-              {currentWorkspace?.description && (
-                <p className="text-sm text-gray-600 mt-1">{currentWorkspace.description}</p>
-              )}
+      <div className="p-6">
+          {(workspacesError || orgsError || channelsError) && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 text-sm">
+                Error loading data: {workspacesError?.message || orgsError?.message || channelsError?.message}
+              </p>
             </div>
-            <NotificationBell />
-          </div>
-        </header>
-
-        <div className="p-6">
+          )}
           {workspacesLoading || orgsLoading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
               <p className="mt-4 text-gray-600">Loading...</p>
             </div>
           ) : (
@@ -175,7 +176,7 @@ export function DashboardPage() {
             </div>
           )}
         </div>
-      </main>
-    </div>
+      </div>
+    </MainLayout>
   );
 }

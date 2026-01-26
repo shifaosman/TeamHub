@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useGlobalSearch } from '@/hooks/useSearch';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { format } from 'date-fns';
+import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -16,6 +18,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const { currentWorkspace } = useWorkspaceStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const { data: searchResults, isLoading } = useGlobalSearch(
     currentWorkspace?._id || '',
@@ -26,8 +29,23 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus();
+      setQuery(''); // Reset query when opening
     }
   }, [isOpen]);
+
+  // Click outside to close
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -119,16 +137,25 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black bg-opacity-50">
-      <div className="w-full max-w-2xl bg-white rounded-lg shadow-xl">
-        <div className="p-4 border-b border-gray-200">
+      <div ref={containerRef} className="w-full max-w-2xl bg-white rounded-lg shadow-xl">
+        <div className="p-4 border-b border-gray-200 flex items-center gap-2">
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search messages, channels, users... (Press Esc to close)"
-            className="w-full px-4 py-2 text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="Search messages, channels, users..."
+            className="flex-1 px-4 py-2 text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
           />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="flex-shrink-0"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
 
         <div ref={resultsRef} className="max-h-96 overflow-y-auto">
@@ -283,7 +310,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             <span>
               {totalResults > 0 ? `${totalResults} result${totalResults !== 1 ? 's' : ''}` : 'No results'}
             </span>
-            <span>↑↓ Navigate • Enter Select • Esc Close</span>
+            <span>↑↓ Navigate • Enter Select • Click outside or X to close</span>
           </div>
         </div>
       </div>

@@ -135,13 +135,19 @@ export class WorkspacesService {
     const workspace = await this.findWorkspaceById(workspaceId);
     Object.assign(workspace, updateDto);
 
+    // Convert DTO to plain object for metadata
+    const metadata: Record<string, unknown> = {};
+    if (updateDto.name !== undefined) metadata.name = updateDto.name;
+    if (updateDto.description !== undefined) metadata.description = updateDto.description;
+    if (updateDto.settings !== undefined) metadata.settings = updateDto.settings;
+
     await this.createAuditLog({
       workspaceId,
       userId,
       action: 'workspace.updated',
       resourceType: 'workspace',
       resourceId: workspaceId,
-      metadata: updateDto,
+      metadata,
     });
 
     return workspace.save();

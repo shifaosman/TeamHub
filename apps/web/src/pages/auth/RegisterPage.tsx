@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Mail } from 'lucide-react';
 
 export function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ export function RegisterPage() {
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -25,7 +27,7 @@ export function RegisterPage() {
 
     try {
       await register(formData);
-      navigate('/dashboard');
+      setShowVerificationMessage(true);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed');
     } finally {
@@ -33,17 +35,50 @@ export function RegisterPage() {
     }
   };
 
+  if (showVerificationMessage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-900 rounded-lg shadow">
+          <div className="text-center">
+            <Mail className="h-12 w-12 text-primary mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+              Check Your Email
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              We've sent a verification email to <strong>{formData.email}</strong>.
+              Please click the link in the email to verify your account.
+            </p>
+            <div className="space-y-2">
+              <Link to="/login">
+                <Button>Go to Login</Button>
+              </Link>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Didn't receive the email?{' '}
+                <button
+                  onClick={() => setShowVerificationMessage(false)}
+                  className="text-primary hover:underline"
+                >
+                  Try again
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+      <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-900 rounded-lg shadow">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
             Create your account
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded">
               {error}
             </div>
           )}
@@ -116,7 +151,7 @@ export function RegisterPage() {
           </div>
 
           <div className="text-center text-sm">
-            <span className="text-gray-600">Already have an account? </span>
+            <span className="text-gray-600 dark:text-gray-400">Already have an account? </span>
             <Link to="/login" className="text-primary hover:underline">
               Sign in
             </Link>

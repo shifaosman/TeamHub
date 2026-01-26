@@ -61,6 +61,10 @@ export class GatewayGateway implements OnGatewayConnection, OnGatewayDisconnect 
       });
 
       client.userId = payload.sub;
+      if (!client.userId) {
+        throw new Error('Invalid token');
+      }
+      
       client.join(`user:${client.userId}`);
 
       // Track connection
@@ -208,7 +212,7 @@ export class GatewayGateway implements OnGatewayConnection, OnGatewayDisconnect 
         try {
           const channelMembers = await this.channelsService.getChannelMembers(data.channelId);
           const memberIds = channelMembers
-            .map((m) => {
+            .map((m: any) => {
               // Handle both populated and non-populated userId
               const userIdValue = typeof m.userId === 'object' && m.userId?._id
                 ? m.userId._id.toString()
@@ -216,6 +220,9 @@ export class GatewayGateway implements OnGatewayConnection, OnGatewayDisconnect 
               return userIdValue;
             })
             .filter((id) => id !== client.userId);
+
+          // Get channel for notification title
+          const channel = await this.channelsService.findOne(data.channelId, client.userId);
 
           for (const memberId of memberIds) {
             this.emitToUser(memberId, 'notification:new', {

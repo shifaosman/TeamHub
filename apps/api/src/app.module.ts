@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { BullModule } from '@nestjs/bullmq';
 import { RedisModule } from './redis/redis.module';
+import { CommonModule } from './common/common.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
@@ -35,7 +36,8 @@ import configuration from './config/configuration';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => [
         {
-          ttl: configService.get<number>('rateLimit.ttl', 60),
+          name: 'default',
+          ttl: configService.get<number>('rateLimit.ttl', 60) * 1000, // Convert to milliseconds
           limit: configService.get<number>('rateLimit.max', 100),
         },
       ],
@@ -51,6 +53,7 @@ import configuration from './config/configuration';
       inject: [ConfigService],
     }),
     RedisModule,
+    CommonModule,
     AuthModule,
     UsersModule,
     WorkspacesModule,

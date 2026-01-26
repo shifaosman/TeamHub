@@ -19,6 +19,7 @@ import { SearchMessagesDto } from './dto/search-messages.dto';
 import { ChannelsService } from '../channels/channels.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '@teamhub/shared';
+// @ts-ignore - sanitize-html doesn't have types
 import sanitizeHtml from 'sanitize-html';
 
 @Injectable()
@@ -88,7 +89,7 @@ export class MessagesService {
         createMessageDto.channelId
       );
       const memberIds = channelMembers
-        .map((m) => {
+        .map((m: any) => {
           // Handle both populated and non-populated userId
           const userIdValue = typeof m.userId === 'object' && m.userId?._id
             ? m.userId._id.toString()
@@ -149,14 +150,18 @@ export class MessagesService {
       query._id = { $lt: before };
     }
 
+    // Limit to reasonable maximum
+    const effectiveLimit = Math.min(limit, 100);
+
     const messages = await this.messageModel
       .find(query)
       .sort({ createdAt: -1 })
-      .limit(limit)
+      .limit(effectiveLimit)
       .populate('userId', 'username email firstName lastName avatar')
+      .lean() // Use lean() for better performance
       .exec();
 
-    return messages.reverse(); // Return in chronological order
+    return messages.reverse() as MessageDocument[]; // Return in chronological order
   }
 
   async findThreadMessages(threadId: string, userId: string): Promise<MessageDocument[]> {
@@ -211,7 +216,7 @@ export class MessagesService {
     await this.messageEditHistoryModel.create({
       messageId: id,
       content: message.content,
-      editedAt: message.editedAt || message.updatedAt,
+      editedAt: message.editedAt || (message as any).updatedAt || new Date(),
     });
 
     // Sanitize new content
@@ -238,15 +243,6 @@ export class MessagesService {
     // Only message author can delete (for now)
     if (message.userId.toString() !== userId) {
       throw new ForbiddenException('You can only delete your own messages');
-    }
-
-    const canDelete =
-      message.userId.toString() === userId ||
-      workspaceMember?.role === 'owner' ||
-      workspaceMember?.role === 'admin';
-
-    if (!canDelete) {
-      throw new ForbiddenException('You do not have permission to delete this message');
     }
 
     // Soft delete
@@ -393,9 +389,36 @@ export class MessagesService {
   }
 
   async getUnreadCount(channelId: string, userId: string): Promise<number> {
-    // This will be implemented with proper channel member access
-    // For now, return 0
-    return 0;
+    try {
+      // Verify channel access
+      await this.channelsService.findOne(channelId, userId);
+
+      // Get channel member's last read timestamp
+      const channelMembers = await this.channelsService.getChannelMembers(channelId);
+      const member = channelMembers.find((m: any) => {
+        const memberUserId = typeof m.userId === 'object' && m.userId?._id
+          ? m.userId._id.toString()
+          : m.userId.toString();
+        return memberUserId === userId;
+      });
+
+      if (!member) {
+        return 0;
+      }
+
+      const lastReadAt = member.lastReadAt || new Date(0);
+
+      // Count unread messages (messages created after last read, excluding user's own messages)
+      return this.messageModel.countDocuments({
+        channelId,
+        userId: { $ne: userId },
+        createdAt: { $gt: lastReadAt },
+        deletedAt: null,
+      }).exec();
+    } catch (error) {
+      // Return 0 if there's any error (e.g., channel not found, access denied)
+      return 0;
+    }
   }
 
   private extractMentions(content: string): string[] {

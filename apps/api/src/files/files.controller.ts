@@ -10,8 +10,13 @@ import {
   UploadedFile,
   Res,
   StreamableFile,
+  BadRequestException,
+  Req,
+  UsePipes,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Request } from 'express';
+import { ValidationPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { FilesService } from './files.service';
 import { UploadFileDto } from './dto/upload-file.dto';
@@ -46,31 +51,43 @@ export class FilesController {
         },
         channelId: {
           type: 'string',
-          required: false,
         },
         isPublic: {
           type: 'boolean',
-          required: false,
         },
       },
+      required: ['workspaceId'],
     },
   })
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true, whitelist: false }))
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser() user: any,
-    @Query() uploadDto: UploadFileDto
+    @Req() req: Request & { body: { workspaceId?: string; channelId?: string; isPublic?: string } }
   ) {
     if (!file) {
-      throw new Error('No file provided');
+      throw new BadRequestException('No file provided');
     }
+
+    // Read form data from request body (multipart/form-data fields are parsed by multer)
+    const workspaceId = req.body?.workspaceId;
+    const channelId = req.body?.channelId;
+    const isPublic = req.body?.isPublic;
+
+    if (!workspaceId) {
+      throw new BadRequestException('workspaceId is required');
+    }
+
+    // Convert string to boolean for isPublic
+    const isPublicBool = isPublic === 'true' || isPublic === '1' || isPublic === true;
 
     return this.filesService.uploadFile(
       file,
       user.userId,
-      uploadDto.workspaceId,
-      uploadDto.channelId,
-      uploadDto.isPublic || false
+      workspaceId,
+      channelId,
+      isPublicBool
     );
   }
 
@@ -113,7 +130,8 @@ export class FilesController {
         'Content-Type': file.mimeType,
         'Content-Disposition': `attachment; filename="${file.originalName}"`,
       });
-      return new StreamableFile(stream);
+      // Convert NodeJS.ReadableStream to Node.js Readable if needed
+      return new StreamableFile(stream as any);
     }
 
     // For S3, redirect to signed URL
