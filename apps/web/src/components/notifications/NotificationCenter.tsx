@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import { useNotifications, useMarkAsRead, useMarkAllAsRead, useUnreadCount } from '@/hooks/useNotifications';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
-import { Link } from 'react-router-dom';
 
 interface NotificationCenterProps {
   isOpen: boolean;

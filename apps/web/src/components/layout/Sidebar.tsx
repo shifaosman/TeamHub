@@ -1,7 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useWorkspaces, useOrganizations } from '@/hooks/useWorkspaces';
-import { useChannels } from '@/hooks/useChannels';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { Button } from '@/components/ui/button';
 import { WorkspaceSelector } from '@/components/workspace/WorkspaceSelector';
@@ -14,21 +12,17 @@ export function Sidebar() {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { currentWorkspace } = useWorkspaceStore();
-  const { data: channels } = useChannels(currentWorkspace?._id || '');
   const { theme, toggleTheme } = useTheme();
 
-  const isChannelPage = location.pathname.startsWith('/channels/');
-  const currentChannelId = isChannelPage ? location.pathname.split('/channels/')[1] : null;
-
   return (
-    <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen sticky top-0">
+    <aside className="w-64 bg-background border-r border-border flex flex-col h-screen sticky top-0">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+      <div className="p-4 border-b border-border">
         <Link to="/dashboard" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <MessageSquare className="h-5 w-5 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">TeamHub</h1>
+          <h1 className="text-xl font-bold text-foreground">TeamHub</h1>
         </Link>
       </div>
 
@@ -39,7 +33,7 @@ export function Sidebar() {
           className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
             location.pathname === '/dashboard'
               ? 'bg-primary text-primary-foreground'
-              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+              : 'text-foreground hover:bg-muted'
           }`}
         >
           <Home className="h-4 w-4" />
@@ -50,8 +44,24 @@ export function Sidebar() {
 
         {currentWorkspace && (
           <div>
+            <Link
+              to="/projects"
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                location.pathname.startsWith('/projects')
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-foreground hover:bg-muted'
+              }`}
+            >
+              <span>📋</span>
+              Projects
+            </Link>
+          </div>
+        )}
+
+        {currentWorkspace && (
+          <div>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Channels
               </h3>
               <Link to={`/workspaces/${currentWorkspace._id}/channels/new`}>
@@ -71,7 +81,7 @@ export function Sidebar() {
               className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 location.pathname.includes('/notes')
                   ? 'bg-primary text-primary-foreground'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  : 'text-foreground hover:bg-muted'
               }`}
             >
               <span>📝</span>
@@ -82,21 +92,21 @@ export function Sidebar() {
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-200 space-y-2">
+      <div className="p-4 border-t border-border space-y-2">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
               {user?.avatar ? (
                 <img src={user.avatar} alt={user.username} className="w-full h-full rounded-full" />
               ) : (
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                <span className="text-xs font-medium text-muted-foreground">
                   {user?.username?.[0]?.toUpperCase() || 'U'}
                 </span>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{user?.username}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</div>
+              <div className="text-sm font-medium text-foreground truncate">{user?.username}</div>
+              <div className="text-xs text-muted-foreground truncate">{user?.email}</div>
             </div>
           </div>
           <NotificationBell />

@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import * as mongoose from 'mongoose';
 import { UserRole } from '@teamhub/shared';
 
 export type WorkspaceMemberDocument = HydratedDocument<WorkspaceMember>;
@@ -9,7 +10,7 @@ export class WorkspaceMember {
   @Prop({ required: true, index: true })
   workspaceId!: string;
 
-  @Prop({ required: true, index: true })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true })
   userId!: string;
 
   @Prop({ type: String, enum: Object.values(UserRole), default: UserRole.MEMBER })

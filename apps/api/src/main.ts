@@ -77,6 +77,10 @@ async function bootstrap() {
     .addTag('files', 'File upload and management')
     .addTag('notes', 'Collaborative notes')
     .addTag('search', 'Search functionality')
+    .addTag('projects', 'Project management')
+    .addTag('tasks', 'Task management')
+    .addTag('comments', 'Task comments')
+    .addTag('activity', 'Activity feed')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

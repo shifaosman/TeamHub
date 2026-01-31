@@ -2,13 +2,11 @@ import { useEffect } from 'react';
 import { useSocket } from './useSocket';
 import { useToast } from './useToast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 export function useMessageNotifications() {
   const socket = useSocket();
   const { toast } = useToast();
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (!socket || !user) return;

@@ -59,14 +59,14 @@ export function ResetPasswordPage() {
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-900 rounded-lg shadow">
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="max-w-md w-full space-y-8 p-8 bg-card text-card-foreground rounded-lg shadow border border-border">
           <div className="text-center">
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            <h2 className="text-2xl font-bold text-foreground mb-2">
               Password Reset Successful!
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-muted-foreground mb-4">
               Your password has been reset. Redirecting to login...
             </p>
             <Link to="/login">
@@ -80,14 +80,14 @@ export function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-900 rounded-lg shadow">
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="max-w-md w-full space-y-8 p-8 bg-card text-card-foreground rounded-lg shadow border border-border">
           <div className="text-center">
-            <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-foreground mb-2">
               Invalid Reset Link
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+            <p className="text-muted-foreground mb-4">{error}</p>
             <Link to="/forgot-password">
               <Button>Request New Reset Link</Button>
             </Link>
@@ -98,19 +98,19 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-900 rounded-lg shadow">
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="max-w-md w-full space-y-8 p-8 bg-card text-card-foreground rounded-lg shadow border border-border">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
             Reset Password
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-center text-sm text-muted-foreground">
             Enter your new password below.
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded">
+            <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded">
               {error}
             </div>
           )}

@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useCreateMessage } from '@/hooks/useMessages';
 import { useSocket } from '@/hooks/useSocket';
-import { useUploadFile } from '@/hooks/useFiles';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { Button } from '@/components/ui/button';
 import { FileUpload } from '@/components/files/FileUpload';
@@ -20,10 +19,9 @@ export function MessageInput({ channelId, threadId, replyToId }: MessageInputPro
   const [attachedFiles, setAttachedFiles] = useState<FileUploadType[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const createMessage = useCreateMessage();
-  const uploadFile = useUploadFile();
   const socket = useSocket();
   const { currentWorkspace } = useWorkspaceStore();
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (textareaRef.current) {

@@ -1,5 +1,4 @@
 import { useFilePreview } from '@/hooks/useFiles';
-import { formatDistanceToNow } from 'date-fns';
 
 interface FilePreviewProps {
   fileId: string;
@@ -16,12 +15,6 @@ export function FilePreview({ fileId, showDetails = true }: FilePreviewProps) {
   if (!preview) {
     return null;
   }
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  };
 
   if (preview.isImage) {
     return (

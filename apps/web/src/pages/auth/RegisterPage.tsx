@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,6 @@ export function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
   const { register } = useAuth();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,14 +36,14 @@ export function RegisterPage() {
 
   if (showVerificationMessage) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-900 rounded-lg shadow">
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="max-w-md w-full space-y-8 p-8 bg-card text-card-foreground rounded-lg shadow border border-border">
           <div className="text-center">
             <Mail className="h-12 w-12 text-primary mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            <h2 className="text-2xl font-bold text-foreground mb-2">
               Check Your Email
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-muted-foreground mb-4">
               We've sent a verification email to <strong>{formData.email}</strong>.
               Please click the link in the email to verify your account.
             </p>
@@ -52,7 +51,7 @@ export function RegisterPage() {
               <Link to="/login">
                 <Button>Go to Login</Button>
               </Link>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 Didn't receive the email?{' '}
                 <button
                   onClick={() => setShowVerificationMessage(false)}
@@ -69,16 +68,16 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-900 rounded-lg shadow">
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="max-w-md w-full space-y-8 p-8 bg-card text-card-foreground rounded-lg shadow border border-border">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
             Create your account
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded">
+            <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded">
               {error}
             </div>
           )}
@@ -151,7 +150,7 @@ export function RegisterPage() {
           </div>
 
           <div className="text-center text-sm">
-            <span className="text-gray-600 dark:text-gray-400">Already have an account? </span>
+            <span className="text-muted-foreground">Already have an account? </span>
             <Link to="/login" className="text-primary hover:underline">
               Sign in
             </Link>

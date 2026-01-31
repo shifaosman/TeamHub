@@ -20,7 +20,7 @@ export function EmailVerificationBanner() {
   };
 
   return (
-    <div className="bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800">
+    <div className="bg-yellow-500/10 border-b border-yellow-500/30">
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

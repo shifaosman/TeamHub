@@ -137,15 +137,15 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black bg-opacity-50">
-      <div ref={containerRef} className="w-full max-w-2xl bg-white rounded-lg shadow-xl">
-        <div className="p-4 border-b border-gray-200 flex items-center gap-2">
+      <div ref={containerRef} className="w-full max-w-2xl bg-card text-card-foreground rounded-lg shadow-xl border border-border">
+        <div className="p-4 border-b border-border flex items-center gap-2">
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search messages, channels, users..."
-            className="flex-1 px-4 py-2 text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            className="flex-1 px-4 py-2 text-lg border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <Button
             variant="ghost"
@@ -160,14 +160,14 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
         <div ref={resultsRef} className="max-h-96 overflow-y-auto">
           {isLoading ? (
-            <div className="p-4 text-center text-gray-500">Searching...</div>
+            <div className="p-4 text-center text-muted-foreground">Searching...</div>
           ) : !query || query.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">
+            <div className="p-4 text-center text-muted-foreground">
               <p className="mb-2">Start typing to search</p>
               <p className="text-sm">Search for messages, channels, or users</p>
             </div>
           ) : totalResults === 0 ? (
-            <div className="p-4 text-center text-gray-500">
+            <div className="p-4 text-center text-muted-foreground">
               <p>No results found for "{query}"</p>
             </div>
           ) : (
@@ -175,7 +175,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
               {/* Messages */}
               {searchResults?.messages && searchResults.messages.length > 0 && (
                 <div>
-                  <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase bg-gray-50">
+                  <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase bg-muted">
                     Messages ({searchResults.messages.length})
                   </div>
                   {searchResults.messages.map((message, idx) => {
@@ -184,12 +184,12 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                       <button
                         key={message._id}
                         onClick={() => handleSelect(globalIndex)}
-                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
-                          selectedIndex === globalIndex ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                        className={`w-full text-left px-4 py-3 hover:bg-muted transition-colors ${
+                          selectedIndex === globalIndex ? 'bg-primary/10 border-l-4 border-primary' : ''
                         }`}
                       >
                         <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
                             {message.user?.avatar ? (
                               <img
                                 src={message.user.avatar}
@@ -197,21 +197,21 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                                 className="w-full h-full rounded-full"
                               />
                             ) : (
-                              <span className="text-xs font-medium text-gray-600">
+                              <span className="text-xs font-medium text-muted-foreground">
                                 {message.user?.username?.[0]?.toUpperCase() || 'U'}
                               </span>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-gray-900">
+                              <span className="font-semibold text-foreground">
                                 {message.user?.username || 'Unknown'}
                               </span>
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-muted-foreground">
                                 {format(new Date(message.createdAt), 'MMM d, h:mm a')}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-700 mt-1 line-clamp-2">
+                            <p className="text-sm text-foreground/80 mt-1 line-clamp-2">
                               {message.content}
                             </p>
                           </div>
@@ -225,7 +225,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
               {/* Channels */}
               {searchResults?.channels && searchResults.channels.length > 0 && (
                 <div>
-                  <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase bg-gray-50">
+                  <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase bg-muted">
                     Channels ({searchResults.channels.length})
                   </div>
                   {searchResults.channels.map((channel, idx) => {
@@ -235,18 +235,18 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                       <button
                         key={channel._id}
                         onClick={() => handleSelect(globalIndex)}
-                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
+                        className={`w-full text-left px-4 py-3 hover:bg-muted transition-colors ${
                           selectedIndex === globalIndex
-                            ? 'bg-blue-50 border-l-4 border-blue-500'
+                            ? 'bg-primary/10 border-l-4 border-primary'
                             : ''
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className="text-xl">#</div>
                           <div>
-                            <div className="font-semibold text-gray-900">{channel.name}</div>
+                            <div className="font-semibold text-foreground">{channel.name}</div>
                             {channel.description && (
-                              <div className="text-sm text-gray-500 mt-1">{channel.description}</div>
+                              <div className="text-sm text-muted-foreground mt-1">{channel.description}</div>
                             )}
                           </div>
                         </div>
@@ -259,7 +259,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
               {/* Users */}
               {searchResults?.users && searchResults.users.length > 0 && (
                 <div>
-                  <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase bg-gray-50">
+                  <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase bg-muted">
                     Users ({searchResults.users.length})
                   </div>
                   {searchResults.users.map((user, idx) => {
@@ -271,14 +271,14 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                       <button
                         key={user._id}
                         onClick={() => handleSelect(globalIndex)}
-                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
+                        className={`w-full text-left px-4 py-3 hover:bg-muted transition-colors ${
                           selectedIndex === globalIndex
-                            ? 'bg-blue-50 border-l-4 border-blue-500'
+                            ? 'bg-primary/10 border-l-4 border-primary'
                             : ''
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-muted flex items-center justify-center">
                             {user.avatar ? (
                               <img
                                 src={user.avatar}
@@ -286,14 +286,14 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                                 className="w-full h-full rounded-full"
                               />
                             ) : (
-                              <span className="text-sm font-medium text-gray-600">
+                              <span className="text-sm font-medium text-muted-foreground">
                                 {user.username?.[0]?.toUpperCase() || 'U'}
                               </span>
                             )}
                           </div>
                           <div>
-                            <div className="font-semibold text-gray-900">{user.username}</div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
+                            <div className="font-semibold text-foreground">{user.username}</div>
+                            <div className="text-sm text-muted-foreground">{user.email}</div>
                           </div>
                         </div>
                       </button>
@@ -305,7 +305,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
           )}
         </div>
 
-        <div className="px-4 py-2 border-t border-gray-200 text-xs text-gray-500">
+        <div className="px-4 py-2 border-t border-border text-xs text-muted-foreground">
           <div className="flex items-center justify-between">
             <span>
               {totalResults > 0 ? `${totalResults} result${totalResults !== 1 ? 's' : ''}` : 'No results'}

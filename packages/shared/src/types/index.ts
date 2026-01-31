@@ -5,3 +5,6 @@ export * from './message';
 export * from './notification';
 export * from './file';
 export * from './note';
+export * from './comment';
+export * from './project';
+export * from './task';

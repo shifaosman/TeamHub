@@ -12,22 +12,22 @@ export function Toaster() {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`rounded-lg border p-4 shadow-lg bg-white ${
+          className={`rounded-lg border p-4 shadow-lg bg-card text-card-foreground border-border ${
             toast.variant === 'error'
-              ? 'border-red-200 bg-red-50'
+              ? 'border-destructive/40 bg-destructive/10'
               : toast.variant === 'success'
-              ? 'border-green-200 bg-green-50'
+              ? 'border-green-500/40 bg-green-500/10'
               : toast.variant === 'warning'
-              ? 'border-yellow-200 bg-yellow-50'
-              : 'border-gray-200'
+              ? 'border-yellow-500/40 bg-yellow-500/10'
+              : ''
           }`}
         >
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1">
               {toast.title && (
-                <div className="font-semibold text-gray-900 mb-1">{toast.title}</div>
+                <div className="font-semibold mb-1">{toast.title}</div>
               )}
-              <div className="text-sm text-gray-700">{toast.description}</div>
+              <div className="text-sm text-muted-foreground">{toast.description}</div>
             </div>
             <Button
               variant="ghost"

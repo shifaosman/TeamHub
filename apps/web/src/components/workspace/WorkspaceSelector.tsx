@@ -14,12 +14,12 @@ export function WorkspaceSelector() {
   }, [workspaces, currentWorkspace, setCurrentWorkspace]);
 
   if (isLoading) {
-    return <div className="text-sm text-gray-500">Loading workspaces...</div>;
+    return <div className="text-sm text-muted-foreground">Loading workspaces...</div>;
   }
 
   if (!workspaces || workspaces.length === 0) {
     return (
-      <div className="text-sm text-gray-500">
+      <div className="text-sm text-muted-foreground">
         No workspaces found. Create one to get started!
       </div>
     );
@@ -27,7 +27,7 @@ export function WorkspaceSelector() {
 
   return (
     <div className="space-y-2">
-      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
         Workspaces
       </h3>
       {workspaces.map((workspace) => (

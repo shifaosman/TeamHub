@@ -3,6 +3,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { VerifyEmailPage } from '@/pages/auth/VerifyEmailPage';
@@ -16,6 +17,8 @@ import { CreateChannelPage } from '@/pages/channels/CreateChannelPage';
 import { NotePage } from '@/pages/NotePage';
 import { NotesPage } from '@/pages/notes/NotesPage';
 import { CreateNotePage } from '@/pages/notes/CreateNotePage';
+import { ProjectsPage } from '@/pages/projects/ProjectsPage';
+import { ProjectBoardPage } from '@/pages/projects/ProjectBoardPage';
 import { CommandPalette } from '@/components/search/CommandPalette';
 import { useCommandPalette } from '@/hooks/useCommandPalette';
 import { useMessageNotifications } from '@/hooks/useMessageNotifications';
@@ -66,6 +69,22 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <ProjectsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects/:projectId"
+          element={
+            <ProtectedRoute>
+              <ProjectBoardPage />
+            </ProtectedRoute>
+          }
+        />
           <Route
             path="/workspaces/:workspaceId/channels/new"
             element={
@@ -107,14 +126,16 @@ function AppContent() {
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <AppContent />
-          <Toaster />
-        </BrowserRouter>
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <AppContent />
+            <Toaster />
+          </BrowserRouter>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

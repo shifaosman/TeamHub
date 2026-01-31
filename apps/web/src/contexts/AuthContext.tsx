@@ -42,9 +42,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       api
         .get('/users/me')
         .then((response) => {
-          setUser(response.data);
+          // Handle both wrapped and unwrapped responses
+          const userData = response.data?.data || response.data;
+          if (userData && userData._id) {
+            setUser(userData);
+          } else {
+            console.error('Invalid user data received:', userData);
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+          }
         })
-        .catch(() => {
+        .catch((error) => {
+          console.error('Failed to get user:', error);
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
         })
@@ -58,18 +67,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const response = await api.post('/auth/login', { email, password });
-    const { user, tokens } = response.data;
-    localStorage.setItem('accessToken', tokens.accessToken);
-    localStorage.setItem('refreshToken', tokens.refreshToken);
-    setUser(user);
+    // Handle both wrapped and unwrapped responses
+    const responseData = response.data?.data || response.data;
+    const { user, tokens } = responseData;
+    if (tokens?.accessToken) {
+      localStorage.setItem('accessToken', tokens.accessToken);
+      localStorage.setItem('refreshToken', tokens.refreshToken);
+      setUser(user);
+    } else {
+      throw new Error('Invalid response from server');
+    }
   };
 
   const register = async (data: RegisterData) => {
     const response = await api.post('/auth/register', data);
-    const { user, tokens } = response.data;
-    localStorage.setItem('accessToken', tokens.accessToken);
-    localStorage.setItem('refreshToken', tokens.refreshToken);
-    setUser(user);
+    // Handle both wrapped and unwrapped responses
+    const responseData = response.data?.data || response.data;
+    const { user, tokens } = responseData;
+    if (tokens?.accessToken) {
+      localStorage.setItem('accessToken', tokens.accessToken);
+      localStorage.setItem('refreshToken', tokens.refreshToken);
+      setUser(user);
+    } else {
+      throw new Error('Invalid response from server');
+    }
   };
 
   const logout = async () => {

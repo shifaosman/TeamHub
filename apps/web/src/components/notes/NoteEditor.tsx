@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNote, useUpdateNote } from '@/hooks/useNotes';
 import { useSocket } from '@/hooks/useSocket';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 interface NoteEditorProps {
@@ -15,7 +14,7 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (note) {

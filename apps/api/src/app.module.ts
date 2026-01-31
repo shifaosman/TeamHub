@@ -15,6 +15,10 @@ import { FilesModule } from './files/files.module';
 import { NotesModule } from './notes/notes.module';
 import { SearchModule } from './search/search.module';
 import { GatewayModule } from './gateway/gateway.module';
+import { ProjectsModule } from './projects/projects.module';
+import { TasksModule } from './tasks/tasks.module';
+import { CommentsModule } from './comments/comments.module';
+import { ActivityModule } from './activity/activity.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -64,6 +68,10 @@ import configuration from './config/configuration';
     NotesModule,
     SearchModule,
     GatewayModule,
+    ProjectsModule,
+    TasksModule,
+    CommentsModule,
+    ActivityModule,
   ],
 })
 export class AppModule {}

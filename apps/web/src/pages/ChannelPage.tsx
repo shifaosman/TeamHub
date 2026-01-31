@@ -14,8 +14,6 @@ export function ChannelPage() {
   // Enable real-time message notifications
   useMessageNotifications();
 
-  const channel = channels?.find((c) => c._id === channelId);
-
   if (!channelId || !currentWorkspace) {
     return (
       <MainLayout>
@@ -30,11 +28,11 @@ export function ChannelPage() {
 
   return (
     <MainLayout>
-      <header className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800 px-6 py-4 sticky top-0 z-10">
+      <header className="bg-background shadow-sm border-b border-border px-6 py-4 sticky top-0 z-10">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">#{channel?.name || 'Channel'}</h2>
+          <h2 className="text-xl font-semibold text-foreground">#{channel?.name || 'Channel'}</h2>
           {channel?.description && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{channel.description}</p>
+            <p className="text-sm text-muted-foreground mt-1">{channel.description}</p>
           )}
         </div>
       </header>

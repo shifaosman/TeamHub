@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkspaces, useOrganizations } from '@/hooks/useWorkspaces';
 import { useChannels } from '@/hooks/useChannels';
@@ -8,7 +8,6 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { useMessageNotifications } from '@/hooks/useMessageNotifications';
 
 export function DashboardPage() {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { data: workspaces, isLoading: workspacesLoading, error: workspacesError } = useWorkspaces();
   const { data: organizations, isLoading: orgsLoading, error: orgsError } = useOrganizations();
@@ -34,33 +33,23 @@ export function DashboardPage() {
     });
   }
 
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-gray-600">Not authenticated. Redirecting...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <MainLayout>
-      <header className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
+      <header className="bg-background shadow-sm border-b border-border sticky top-0 z-10">
         <div className="px-6 py-4">
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+          <h2 className="text-2xl font-semibold text-foreground">
             {currentWorkspace ? currentWorkspace.name : 'Dashboard'}
           </h2>
           {currentWorkspace?.description && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{currentWorkspace.description}</p>
+            <p className="text-sm text-muted-foreground mt-1">{currentWorkspace.description}</p>
           )}
         </div>
       </header>
 
       <div className="p-6">
           {(workspacesError || orgsError || channelsError) && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-800 text-sm">
+            <div className="mb-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
+              <p className="text-destructive text-sm">
                 Error loading data: {workspacesError?.message || orgsError?.message || channelsError?.message}
               </p>
             </div>
@@ -68,15 +57,15 @@ export function DashboardPage() {
           {workspacesLoading || orgsLoading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading...</p>
+              <p className="mt-4 text-muted-foreground">Loading...</p>
             </div>
           ) : (
             <div className="space-y-6">
               {/* Quick Actions */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-card text-card-foreground rounded-lg border border-border shadow-sm p-6">
                   <h3 className="text-lg font-semibold mb-2">Organizations</h3>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-muted-foreground mb-4">
                     {organizations?.length || 0} organization(s)
                   </p>
                   <Link to="/organizations/new">
@@ -84,9 +73,9 @@ export function DashboardPage() {
                   </Link>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-card text-card-foreground rounded-lg border border-border shadow-sm p-6">
                   <h3 className="text-lg font-semibold mb-2">Workspaces</h3>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-muted-foreground mb-4">
                     {workspaces?.length || 0} workspace(s)
                   </p>
                   <Link to="/workspaces/new">
@@ -95,9 +84,9 @@ export function DashboardPage() {
                 </div>
 
                 {currentWorkspace && (
-                  <div className="bg-white rounded-lg shadow p-6">
+                  <div className="bg-card text-card-foreground rounded-lg border border-border shadow-sm p-6">
                     <h3 className="text-lg font-semibold mb-2">Notes</h3>
-                    <p className="text-sm text-gray-600 mb-4">Collaborative notes</p>
+                    <p className="text-sm text-muted-foreground mb-4">Collaborative notes</p>
                     <Link to={`/workspaces/${currentWorkspace._id}/notes`}>
                       <Button>View Notes</Button>
                     </Link>
@@ -107,7 +96,7 @@ export function DashboardPage() {
 
               {/* Channels */}
               {currentWorkspace && channels && channels.length > 0 && (
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-card text-card-foreground rounded-lg border border-border shadow-sm p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold">Channels</h3>
                     <Link to={`/workspaces/${currentWorkspace._id}/channels/new`}>
@@ -119,7 +108,7 @@ export function DashboardPage() {
                       <Link
                         key={channel._id}
                         to={`/channels/${channel._id}`}
-                        className="block px-3 py-2 rounded-md hover:bg-gray-50 text-gray-700"
+                        className="block px-3 py-2 rounded-md hover:bg-muted text-foreground"
                       >
                         <span className="mr-2">#</span>
                         {channel.name}
@@ -131,21 +120,21 @@ export function DashboardPage() {
 
               {/* Current Workspace Info */}
               {currentWorkspace && (
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-card text-card-foreground rounded-lg border border-border shadow-sm p-6">
                   <h3 className="text-lg font-semibold mb-4">Current Workspace</h3>
                   <div className="space-y-2">
                     <div>
-                      <span className="text-sm font-medium text-gray-700">Name:</span>
-                      <span className="ml-2 text-sm text-gray-600">{currentWorkspace.name}</span>
+                      <span className="text-sm font-medium text-foreground">Name:</span>
+                      <span className="ml-2 text-sm text-muted-foreground">{currentWorkspace.name}</span>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-700">Slug:</span>
-                      <span className="ml-2 text-sm text-gray-600">{currentWorkspace.slug}</span>
+                      <span className="text-sm font-medium text-foreground">Slug:</span>
+                      <span className="ml-2 text-sm text-muted-foreground">{currentWorkspace.slug}</span>
                     </div>
                     {currentWorkspace.description && (
                       <div>
-                        <span className="text-sm font-medium text-gray-700">Description:</span>
-                        <span className="ml-2 text-sm text-gray-600">
+                        <span className="text-sm font-medium text-foreground">Description:</span>
+                        <span className="ml-2 text-sm text-muted-foreground">
                           {currentWorkspace.description}
                         </span>
                       </div>
@@ -156,9 +145,9 @@ export function DashboardPage() {
 
               {/* Empty State */}
               {(!workspaces || workspaces.length === 0) && (
-                <div className="bg-white rounded-lg shadow p-12 text-center">
+                <div className="bg-card text-card-foreground rounded-lg border border-border shadow-sm p-12 text-center">
                   <h3 className="text-lg font-semibold mb-2">Get Started</h3>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-muted-foreground mb-6">
                     Create an organization and workspace to start collaborating
                   </p>
                   <div className="flex gap-4 justify-center">
@@ -176,7 +165,6 @@ export function DashboardPage() {
             </div>
           )}
         </div>
-      </div>
     </MainLayout>
   );
 }
