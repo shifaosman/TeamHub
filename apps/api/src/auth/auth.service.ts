@@ -76,13 +76,14 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto, ipAddress?: string, userAgent?: string): Promise<AuthResponse> {
-    const userByEmail = await this.usersService.findByEmail(loginDto.email);
-    if (userByEmail && !userByEmail.isEmailVerified) {
-      throw new UnauthorizedException('Please verify your email before logging in');
-    }
     const user = await this.validateUser(loginDto.email, loginDto.password);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Block login for unverified users
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedException('Please verify your email before logging in');
     }
 
     const tokens = await this.generateTokens(user._id.toString());
