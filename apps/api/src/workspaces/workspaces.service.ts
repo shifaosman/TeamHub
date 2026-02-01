@@ -15,6 +15,7 @@ import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { InviteToWorkspaceDto } from './dto/invite-to-workspace.dto';
+import { CreateInviteLinkDto } from './dto/create-invite-link.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { UserRole } from '@teamhub/shared';
 
@@ -283,6 +284,8 @@ export class WorkspacesService {
       role: inviteDto.role || UserRole.MEMBER,
       invitedBy: inviterUserId,
       expiresAt,
+      maxUses: 1,
+      usesCount: 0,
     });
 
     await this.createAuditLog({
@@ -296,13 +299,58 @@ export class WorkspacesService {
     return invite.save();
   }
 
+  async createInviteLink(
+    workspaceId: string,
+    inviterUserId: string,
+    dto: CreateInviteLinkDto
+  ): Promise<WorkspaceInviteDocument> {
+    await this.ensureMemberWithRole(workspaceId, inviterUserId, [UserRole.OWNER, UserRole.ADMIN]);
+
+    const expiresInDays = dto.expiresInDays ?? 7;
+    const maxUses = dto.maxUses ?? 1;
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+
+    const invite = new this.workspaceInviteModel({
+      workspaceId,
+      role: dto.role || UserRole.MEMBER,
+      invitedBy: inviterUserId,
+      expiresAt,
+      maxUses,
+      usesCount: 0,
+    });
+
+    await this.createAuditLog({
+      workspaceId,
+      userId: inviterUserId,
+      action: 'invite_link.created',
+      resourceType: 'workspace_invite',
+      resourceId: invite._id?.toString(),
+      metadata: { role: dto.role, expiresInDays, maxUses },
+    });
+
+    return invite.save();
+  }
+
   async acceptInvite(token: string, userId: string): Promise<WorkspaceMemberDocument> {
+    const now = new Date();
+    // Accept by token OR short code.
     const invite = await this.workspaceInviteModel
-      .findOne({ token, expiresAt: { $gt: new Date() }, usedAt: null })
+      .findOne({
+        $or: [{ token }, { code: token }],
+        expiresAt: { $gt: now },
+      })
       .exec();
 
     if (!invite) {
       throw new BadRequestException('Invalid or expired invite token');
+    }
+
+    const maxUses = invite.maxUses ?? 1;
+    const usesCount = invite.usesCount ?? 0;
+    if (invite.usedAt || usesCount >= maxUses) {
+      throw new BadRequestException('Invite link has already been used');
     }
 
     // Verify user email matches invite
@@ -314,7 +362,10 @@ export class WorkspacesService {
     }
 
     // Mark invite as used
-    invite.usedAt = new Date();
+    invite.usesCount = usesCount + 1;
+    if (invite.usesCount >= maxUses) {
+      invite.usedAt = now;
+    }
     await invite.save();
 
     // Add user as member

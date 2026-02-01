@@ -6,6 +6,8 @@ import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { Button } from '@/components/ui/button';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useMessageNotifications } from '@/hooks/useMessageNotifications';
+import { InviteMembersDialog } from '@/components/workspace/InviteMembersDialog';
+import { useState } from 'react';
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -13,6 +15,7 @@ export function DashboardPage() {
   const { data: organizations, isLoading: orgsLoading, error: orgsError } = useOrganizations();
   const { currentWorkspace } = useWorkspaceStore();
   const { data: channels, error: channelsError } = useChannels(currentWorkspace?._id || '');
+  const [inviteOpen, setInviteOpen] = useState(false);
   
   // Enable real-time message notifications
   useMessageNotifications();
@@ -121,7 +124,12 @@ export function DashboardPage() {
               {/* Current Workspace Info */}
               {currentWorkspace && (
                 <div className="bg-card text-card-foreground rounded-lg border border-border shadow-sm p-6">
-                  <h3 className="text-lg font-semibold mb-4">Current Workspace</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Current Workspace</h3>
+                    <Button variant="outline" size="sm" onClick={() => setInviteOpen(true)}>
+                      Invite
+                    </Button>
+                  </div>
                   <div className="space-y-2">
                     <div>
                       <span className="text-sm font-medium text-foreground">Name:</span>
@@ -141,6 +149,14 @@ export function DashboardPage() {
                     )}
                   </div>
                 </div>
+              )}
+
+              {currentWorkspace && (
+                <InviteMembersDialog
+                  workspaceId={currentWorkspace._id}
+                  open={inviteOpen}
+                  onOpenChange={setInviteOpen}
+                />
               )}
 
               {/* Empty State */}

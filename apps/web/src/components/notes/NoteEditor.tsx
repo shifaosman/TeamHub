@@ -91,24 +91,24 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
   };
 
   if (isLoading) {
-    return <div className="p-4 text-gray-500">Loading note...</div>;
+    return <div className="p-4 text-sm text-muted-foreground">Loading note...</div>;
   }
 
   if (!note) {
-    return <div className="p-4 text-gray-500">Note not found</div>;
+    return <div className="p-4 text-sm text-muted-foreground">Note not found</div>;
   }
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-border">
         <Input
           value={title}
           onChange={handleTitleChange}
           placeholder="Note title..."
-          className="text-xl font-semibold border-none focus-visible:ring-0 p-0"
+          className="text-xl font-semibold border-none focus-visible:ring-0 p-0 bg-transparent"
         />
         {isEditing && (
-          <p className="text-xs text-gray-500 mt-1">Saving...</p>
+          <p className="text-xs text-muted-foreground mt-1">Saving...</p>
         )}
       </div>
       <div className="flex-1 p-4 overflow-y-auto">
@@ -116,7 +116,7 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
           value={content}
           onChange={handleContentChange}
           placeholder="Start writing..."
-          className="w-full h-full resize-none border-none focus:outline-none focus:ring-0 text-gray-900"
+          className="w-full h-full resize-none border-none bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0"
           style={{ minHeight: '400px' }}
         />
       </div>

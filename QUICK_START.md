@@ -9,10 +9,11 @@ npm install
 
 ### 2. Start Services
 ```bash
-# Start MongoDB and Redis
-npm run docker:up
+# Recommended (avoids port conflicts):
+# 1) Start only MongoDB + Redis
+docker-compose up -d mongo redis
 
-# Start API and Web (in separate terminals or use npm run dev)
+# 2) Start API + Web locally (uses API :2000 and Web :5173)
 npm run dev
 ```
 
@@ -90,6 +91,12 @@ taskkill /PID <PID> /F
 lsof -ti:2000 | xargs kill -9
 ```
 
+**Docker ports (important):**
+- `npm run docker:up` starts **API on 3000** and **Web on 5173** (see `docker-compose.yml`).
+- If you see an error like “bind: Only one usage of each socket address … :3000”, something else is already using port **3000**.
+  - Use `kill-port-3000.ps1`, or stop the conflicting process, or change the mapped port in `docker-compose.yml`.
+- If Web port **5173** is already used (e.g. Docker Web container is running), Vite may switch to **5174**. Check the terminal output for the actual URL.
+
 **MongoDB not connecting:**
 - Check Docker: `docker ps`
 - Verify connection string in `.env`
@@ -99,6 +106,13 @@ lsof -ti:2000 | xargs kill -9
 - Check API is running on port 2000
 - Verify `VITE_API_URL` in `apps/web/.env`
 - Check browser console for errors
+
+## 📸 Capture screenshots
+Once the app is running locally and you can log in, you can generate fresh screenshots:
+
+```bash
+npm run capture:screenshots
+```
 
 ## 📚 Next Steps
 

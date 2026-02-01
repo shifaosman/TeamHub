@@ -11,10 +11,16 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    host: true, // Allow access from mobile/network devices
     proxy: {
       '/api': {
         target: 'http://localhost:2000',
         changeOrigin: true,
+      },
+      '/socket.io': {
+        target: 'http://localhost:2000',
+        changeOrigin: true,
+        ws: true, // Enable WebSocket proxy
       },
     },
   },

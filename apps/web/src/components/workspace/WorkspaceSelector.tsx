@@ -26,13 +26,14 @@ export function WorkspaceSelector() {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-testid="workspace-selector">
       <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
         Workspaces
       </h3>
       {workspaces.map((workspace) => (
         <Button
           key={workspace._id}
+          data-testid="workspace-item"
           variant={currentWorkspace?._id === workspace._id ? 'default' : 'ghost'}
           className="w-full justify-start"
           onClick={() => setCurrentWorkspace(workspace)}

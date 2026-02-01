@@ -13,6 +13,7 @@ import { DashboardPage } from '@/pages/DashboardPage';
 import { ChannelPage } from '@/pages/ChannelPage';
 import { CreateOrganizationPage } from '@/pages/workspaces/CreateOrganizationPage';
 import { CreateWorkspacePage } from '@/pages/workspaces/CreateWorkspacePage';
+import { JoinWorkspacePage } from '@/pages/workspaces/JoinWorkspacePage';
 import { CreateChannelPage } from '@/pages/channels/CreateChannelPage';
 import { NotePage } from '@/pages/NotePage';
 import { NotesPage } from '@/pages/notes/NotesPage';
@@ -58,6 +59,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <CreateWorkspacePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/join"
+          element={
+            <ProtectedRoute>
+              <JoinWorkspacePage />
             </ProtectedRoute>
           }
         />

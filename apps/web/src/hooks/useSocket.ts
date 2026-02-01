@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '@/contexts/AuthContext';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2000';
+// Use current origin for WebSocket (works for both desktop and mobile via Vite proxy)
+const WS_URL = import.meta.env.VITE_WS_URL || window.location.origin;
 
 export function useSocket() {
   const { user } = useAuth();

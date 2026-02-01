@@ -11,12 +11,12 @@ export function FileList({ workspaceId, channelId }: FileListProps) {
   const { data, isLoading } = useFiles(workspaceId, channelId);
 
   if (isLoading) {
-    return <div className="text-sm text-gray-500 p-4">Loading files...</div>;
+    return <div className="text-sm text-muted-foreground p-4">Loading files...</div>;
   }
 
   if (!data || data.files.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500">
+      <div className="p-4 text-center text-muted-foreground">
         <p className="text-sm">No files yet</p>
       </div>
     );
@@ -44,7 +44,7 @@ export function FileList({ workspaceId, channelId }: FileListProps) {
       {data.files.map((file) => (
         <div
           key={file._id}
-          className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors"
+          className="border border-border rounded-lg p-3 hover:bg-muted/50 transition-colors"
         >
           <div className="flex items-start gap-3">
             <div className="text-2xl">{getFileIcon(file.mimeType)}</div>
@@ -52,14 +52,14 @@ export function FileList({ workspaceId, channelId }: FileListProps) {
               <div className="flex items-center gap-2">
                 <a
                   href={`/files/${file._id}/download`}
-                  className="font-medium text-gray-900 hover:text-blue-600 truncate"
+                  className="font-medium text-foreground hover:text-primary truncate"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   {file.originalName}
                 </a>
               </div>
-              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                 <span>{formatFileSize(file.size)}</span>
                 <span>•</span>
                 <span>

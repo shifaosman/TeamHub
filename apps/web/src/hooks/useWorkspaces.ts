@@ -63,3 +63,38 @@ export function useWorkspaceMembers(workspaceId: string) {
     enabled: !!workspaceId,
   });
 }
+
+export function useCreateWorkspaceInviteLink() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: {
+      workspaceId: string;
+      role?: string;
+      expiresInDays?: number;
+      maxUses?: number;
+    }) => {
+      const response = await api.post(`/workspaces/workspaces/${data.workspaceId}/invite-links`, {
+        role: data.role,
+        expiresInDays: data.expiresInDays,
+        maxUses: data.maxUses,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+    },
+  });
+}
+
+export function useAcceptWorkspaceInvite() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (tokenOrCode: string) => {
+      const response = await api.post(`/workspaces/invites/${encodeURIComponent(tokenOrCode)}/accept`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+    },
+  });
+}

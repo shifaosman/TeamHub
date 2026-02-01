@@ -15,6 +15,7 @@ import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { InviteToWorkspaceDto } from './dto/invite-to-workspace.dto';
+import { CreateInviteLinkDto } from './dto/create-invite-link.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -144,9 +145,20 @@ export class WorkspacesController {
     return this.workspacesService.inviteToWorkspace(id, user.userId, inviteDto);
   }
 
+  @Post('workspaces/:id/invite-links')
+  @ApiOperation({ summary: 'Create a shareable invite link/code for a workspace' })
+  @ApiParam({ name: 'id', description: 'Workspace ID' })
+  createInviteLink(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Body() dto: CreateInviteLinkDto
+  ) {
+    return this.workspacesService.createInviteLink(id, user.userId, dto);
+  }
+
   @Post('invites/:token/accept')
-  @ApiOperation({ summary: 'Accept workspace invite' })
-  @ApiParam({ name: 'token', description: 'Invite token' })
+  @ApiOperation({ summary: 'Accept workspace invite (token or code)' })
+  @ApiParam({ name: 'token', description: 'Invite token or invite code' })
   acceptInvite(@Param('token') token: string, @CurrentUser() user: any) {
     return this.workspacesService.acceptInvite(token, user.userId);
   }

@@ -89,11 +89,11 @@ export function MessageInput({ channelId, threadId, replyToId }: MessageInputPro
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+    <form onSubmit={handleSubmit} className="border-t border-border bg-background">
       {attachedFiles.length > 0 && (
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+        <div className="p-4 border-b border-border bg-muted/20">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+            <span className="text-xs font-medium text-muted-foreground">
               {attachedFiles.length} file{attachedFiles.length > 1 ? 's' : ''} attached
             </span>
           </div>
@@ -101,7 +101,7 @@ export function MessageInput({ channelId, threadId, replyToId }: MessageInputPro
             {attachedFiles.map((file) => (
               <div
                 key={file._id}
-                className="relative group border border-gray-200 dark:border-gray-700 rounded-lg p-2 bg-white dark:bg-gray-800"
+                className="relative group border border-border rounded-lg p-2 bg-card text-card-foreground"
               >
                 <button
                   type="button"
@@ -112,7 +112,7 @@ export function MessageInput({ channelId, threadId, replyToId }: MessageInputPro
                   <X className="h-3 w-3" />
                 </button>
                 <FilePreview fileId={file._id} showDetails={false} />
-                <div className="mt-1 text-xs text-gray-600 dark:text-gray-400 truncate">{file.originalName}</div>
+                <div className="mt-1 text-xs text-muted-foreground truncate">{file.originalName}</div>
               </div>
             ))}
           </div>
@@ -126,7 +126,7 @@ export function MessageInput({ channelId, threadId, replyToId }: MessageInputPro
             onChange={handleInput}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            className="w-full resize-none rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full resize-none rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             rows={1}
           />
         </div>

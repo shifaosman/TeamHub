@@ -88,8 +88,10 @@ async function bootstrap() {
 
   const port = configService.get('PORT') || 3000;
   try {
-    await app.listen(port);
+    // Listen on 0.0.0.0 to allow access from mobile/network devices
+    await app.listen(port, '0.0.0.0');
     console.log(`🚀 API is running on: http://localhost:${port}`);
+    console.log(`📱 Network API: http://0.0.0.0:${port} (use your IP for mobile)`);
     console.log(`📚 Swagger docs: http://localhost:${port}/docs`);
   } catch (error: any) {
     if (error.code === 'EADDRINUSE') {

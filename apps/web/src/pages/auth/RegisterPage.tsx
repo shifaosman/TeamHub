@@ -28,7 +28,16 @@ export function RegisterPage() {
       await register(formData);
       setShowVerificationMessage(true);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed');
+      // Show server message (validation or business logic)
+      const msg = err.response?.data?.message;
+      const displayMessage = Array.isArray(msg)
+        ? msg.join('. ')
+        : typeof msg === 'string'
+          ? msg
+          : err.message === 'Network Error' || !err.response
+            ? 'Cannot reach server. Use the same Wi‑Fi or hotspot as this computer and try again.'
+            : 'Registration failed';
+      setError(displayMessage);
     } finally {
       setIsLoading(false);
     }
@@ -101,10 +110,18 @@ export function RegisterPage() {
                 id="username"
                 name="username"
                 required
+                minLength={3}
+                maxLength={30}
+                pattern="[a-zA-Z0-9_-]+"
+                title="Letters, numbers, underscores and hyphens only (3–30 characters)"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 className="mt-1"
+                placeholder="johndoe"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                3–30 characters, letters, numbers, _ and -
+              </p>
             </div>
             <div>
               <Label htmlFor="password">Password</Label>
@@ -114,9 +131,11 @@ export function RegisterPage() {
                 type="password"
                 autoComplete="new-password"
                 required
+                minLength={8}
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="mt-1"
+                placeholder="At least 8 characters"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">

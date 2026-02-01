@@ -23,6 +23,10 @@ export class EmailService {
           user: smtpUser,
           pass: smtpPass,
         },
+        tls: {
+          // Allow self-signed certificates (needed for corporate proxies)
+          rejectUnauthorized: false,
+        },
       });
       this.logger.log('Email service initialized with SMTP');
     } else {

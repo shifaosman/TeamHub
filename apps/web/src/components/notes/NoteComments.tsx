@@ -41,11 +41,11 @@ export function NoteComments({ noteId }: NoteCommentsProps) {
   };
 
   if (isLoading) {
-    return <div className="text-sm text-gray-500 p-4">Loading comments...</div>;
+    return <div className="text-sm text-muted-foreground p-4">Loading comments...</div>;
   }
 
   return (
-    <div className="border-t border-gray-200 p-4">
+    <div className="border-t border-border p-4">
       <h3 className="font-semibold mb-4">Comments</h3>
 
       <form onSubmit={handleSubmit} className="mb-4">
@@ -53,7 +53,7 @@ export function NoteComments({ noteId }: NoteCommentsProps) {
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           placeholder="Add a comment..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary mb-2"
+          className="w-full px-3 py-2 border border-input bg-background text-foreground placeholder:text-muted-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary mb-2"
           rows={3}
         />
         <Button type="submit" size="sm" disabled={!newComment.trim() || addComment.isPending}>
@@ -65,7 +65,7 @@ export function NoteComments({ noteId }: NoteCommentsProps) {
         {comments && comments.length > 0 ? (
           comments.map((comment) => (
             <div key={comment._id} className="flex gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
                 {comment.user?.avatar ? (
                   <img
                     src={comment.user.avatar}
@@ -73,21 +73,21 @@ export function NoteComments({ noteId }: NoteCommentsProps) {
                     className="w-full h-full rounded-full"
                   />
                 ) : (
-                  <span className="text-xs font-medium text-gray-600">
+                  <span className="text-xs font-medium text-muted-foreground">
                     {comment.user?.username?.[0]?.toUpperCase() || 'U'}
                   </span>
                 )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-semibold text-sm text-gray-900">
+                  <span className="font-semibold text-sm text-foreground">
                     {comment.user?.username || 'Unknown'}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-muted-foreground">
                     {format(new Date(comment.createdAt), 'MMM d, h:mm a')}
                   </span>
                 </div>
-                <p className="text-sm text-gray-700">{comment.content}</p>
+                <p className="text-sm text-foreground/90">{comment.content}</p>
                 {comment.user?._id === user?._id && (
                   <button
                     onClick={() => handleDelete(comment._id)}
@@ -100,7 +100,7 @@ export function NoteComments({ noteId }: NoteCommentsProps) {
             </div>
           ))
         ) : (
-          <p className="text-sm text-gray-500">No comments yet</p>
+          <p className="text-sm text-muted-foreground">No comments yet</p>
         )}
       </div>
     </div>

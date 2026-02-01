@@ -30,6 +30,7 @@ export function Sidebar() {
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         <Link
           to="/dashboard"
+          data-testid="nav-dashboard"
           className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
             location.pathname === '/dashboard'
               ? 'bg-primary text-primary-foreground'
@@ -46,6 +47,7 @@ export function Sidebar() {
           <div>
             <Link
               to="/projects"
+              data-testid="nav-projects"
               className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 location.pathname.startsWith('/projects')
                   ? 'bg-primary text-primary-foreground'
@@ -78,6 +80,7 @@ export function Sidebar() {
           <div>
             <Link
               to={`/workspaces/${currentWorkspace._id}/notes`}
+              data-testid="nav-notes"
               className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 location.pathname.includes('/notes')
                   ? 'bg-primary text-primary-foreground'
