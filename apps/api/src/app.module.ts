@@ -19,6 +19,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { TasksModule } from './tasks/tasks.module';
 import { CommentsModule } from './comments/comments.module';
 import { ActivityModule } from './activity/activity.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -72,6 +73,7 @@ import configuration from './config/configuration';
     TasksModule,
     CommentsModule,
     ActivityModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

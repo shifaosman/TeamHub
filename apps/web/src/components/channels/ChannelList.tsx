@@ -1,6 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useChannels } from '@/hooks/useChannels';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 interface ChannelListProps {
   workspaceId: string;
@@ -12,33 +14,42 @@ export function ChannelList({ workspaceId }: ChannelListProps) {
   const currentChannelId = location.pathname.split('/channels/')[1];
 
   if (isLoading) {
-    return <div className="text-sm text-muted-foreground p-4">Loading channels...</div>;
+    return (
+      <div className="space-y-1">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-9 w-full rounded-lg" />
+        ))}
+      </div>
+    );
   }
 
   if (!channels || channels.length === 0) {
     return (
-      <div className="p-4">
-        <p className="text-sm text-muted-foreground mb-2">No channels yet</p>
+      <div className="rounded-lg border border-dashed border-border bg-muted/20 px-3 py-3">
+        <p className="mb-2 text-xs text-muted-foreground">No channels yet</p>
         <Link to={`/workspaces/${workspaceId}/channels/new`}>
-          <Button size="sm" className="w-full">Create Channel</Button>
+          <Button size="sm" variant="outline" className="w-full rounded-lg">
+            Create channel
+          </Button>
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5">
       {channels.map((channel) => (
         <Link
           key={channel._id}
           to={`/channels/${channel._id}`}
-          className={`block w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+          className={cn(
+            'block w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors duration-150',
             currentChannelId === channel._id
-              ? 'bg-primary text-primary-foreground'
-              : 'hover:bg-muted text-foreground'
-          }`}
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'text-foreground hover:bg-muted'
+          )}
         >
-          <span className="mr-2">#</span>
+          <span className="mr-2 text-muted-foreground">#</span>
           {channel.name}
         </Link>
       ))}

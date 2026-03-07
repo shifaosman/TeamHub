@@ -8,13 +8,11 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
+    <div className="flex min-h-screen bg-background text-foreground">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto flex flex-col">
+      <main className="flex flex-1 flex-col overflow-y-auto">
         <EmailVerificationBanner />
-        <div className="flex-1">
-          {children}
-        </div>
+        <div className="flex-1">{children}</div>
       </main>
     </div>
   );

@@ -70,7 +70,10 @@ export class TasksService {
       title: dto.title,
       description: dto.description,
       status,
+      priority: dto.priority ?? 'medium',
+      labels: dto.labels ?? [],
       assigneeId: dto.assigneeId ?? null,
+      dueAt: dto.dueAt ? new Date(dto.dueAt) : undefined,
       watcherIds: [],
       createdBy: userId,
       order: nextOrder,
@@ -84,6 +87,8 @@ export class TasksService {
       taskId: saved._id.toString(),
       actorId: userId,
       type: 'TASK_CREATED',
+      entityType: 'task',
+      entityId: saved._id.toString(),
       metadata: { title: saved.title, status: saved.status },
     });
 
@@ -149,6 +154,8 @@ export class TasksService {
       taskId: saved._id.toString(),
       actorId: userId,
       type: 'TASK_CREATED_FROM_MESSAGE',
+      entityType: 'task',
+      entityId: saved._id.toString(),
       metadata: {
         title: saved.title,
         status: saved.status,
@@ -255,6 +262,9 @@ export class TasksService {
       task.description = dto.description === null ? undefined : dto.description;
     }
 
+    if (dto.priority !== undefined) task.priority = dto.priority;
+    if (dto.labels !== undefined) task.labels = dto.labels;
+
     const previousStatus = task.status;
     const statusChanged = dto.status !== undefined && dto.status !== task.status;
     if (dto.status !== undefined && dto.status !== task.status) {
@@ -278,6 +288,8 @@ export class TasksService {
       taskId: saved._id.toString(),
       actorId: userId,
       type: statusChanged ? 'TASK_MOVED' : 'TASK_UPDATED',
+      entityType: 'task',
+      entityId: saved._id.toString(),
       metadata: statusChanged
         ? { title: saved.title, previousStatus, status: saved.status }
         : { title: saved.title },
@@ -356,6 +368,8 @@ export class TasksService {
       taskId: saved._id.toString(),
       actorId: userId,
       type: 'TASK_ASSIGNED',
+      entityType: 'task',
+      entityId: saved._id.toString(),
       metadata: { assigneeId: nextAssignee, title: saved.title },
     });
 
@@ -425,6 +439,8 @@ export class TasksService {
       taskId: saved._id.toString(),
       actorId: userId,
       type: 'TASK_WATCHERS_UPDATED',
+      entityType: 'task',
+      entityId: saved._id.toString(),
       metadata: { watcherIds },
     });
 
@@ -459,6 +475,8 @@ export class TasksService {
         taskId: saved._id.toString(),
         actorId: userId,
         type: 'TASK_DUE_UPDATED',
+        entityType: 'task',
+        entityId: saved._id.toString(),
         metadata: { dueAt: null },
       });
       return saved;
@@ -478,6 +496,8 @@ export class TasksService {
       taskId: saved._id.toString(),
       actorId: userId,
       type: 'TASK_DUE_UPDATED',
+      entityType: 'task',
+      entityId: saved._id.toString(),
       metadata: { dueAt: saved.dueAt ? saved.dueAt.toISOString() : null },
     });
     return saved;
@@ -512,6 +532,8 @@ export class TasksService {
       taskId: id,
       actorId: userId,
       type: 'TASK_UPDATED',
+      entityType: 'task',
+      entityId: id,
       metadata: { deleted: true },
     });
   }
@@ -585,6 +607,8 @@ export class TasksService {
         taskId: change.task._id.toString(),
         actorId: userId,
         type: 'TASK_MOVED',
+        entityType: 'task',
+        entityId: change.task._id.toString(),
         metadata: { title: change.task.title, previousStatus: change.previousStatus, status: change.nextStatus },
       });
     }

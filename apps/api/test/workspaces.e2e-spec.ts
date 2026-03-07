@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { applyAppPipeline, getAccessTokenFromBody, verifyUserEmail } from './test-utils';
 
 describe('WorkspacesController (e2e)', () => {
   let app: INestApplication;
@@ -14,9 +15,9 @@ describe('WorkspacesController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    await applyAppPipeline(app);
     await app.init();
 
-    // Register and login to get token
     await request(app.getHttpServer())
       .post('/api/auth/register')
       .send({
@@ -24,6 +25,7 @@ describe('WorkspacesController (e2e)', () => {
         username: 'workspaceuser',
         password: 'Test123!',
       });
+    await verifyUserEmail(app, 'workspace@example.com');
 
     const loginResponse = await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -32,9 +34,9 @@ describe('WorkspacesController (e2e)', () => {
         password: 'Test123!',
       });
 
-    accessToken = loginResponse.body.accessToken;
-    userId = loginResponse.body.user._id;
-  });
+    accessToken = getAccessTokenFromBody(loginResponse.body);
+    userId = loginResponse.body.user?._id;
+  }, 15000);
 
   afterAll(async () => {
     await app.close();
@@ -42,15 +44,16 @@ describe('WorkspacesController (e2e)', () => {
 
   describe('/api/workspaces/organizations (POST)', () => {
     it('should create an organization', () => {
+      const slug = `test-org-${Date.now()}`;
       return request(app.getHttpServer())
         .post('/api/workspaces/organizations')
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           name: 'Test Organization',
-          slug: 'test-org',
+          slug,
         })
         .expect(201)
-        .expect((res) => {
+        .expect((res: { body: Record<string, unknown> }) => {
           expect(res.body).toHaveProperty('_id');
           expect(res.body.name).toBe('Test Organization');
         });
@@ -61,29 +64,31 @@ describe('WorkspacesController (e2e)', () => {
     let organizationId: string;
 
     beforeAll(async () => {
+      const slug = `e2e-test-org-${Date.now()}`;
       const orgResponse = await request(app.getHttpServer())
         .post('/api/workspaces/organizations')
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           name: 'E2E Test Org',
-          slug: 'e2e-test-org',
+          slug,
         });
 
       organizationId = orgResponse.body._id;
-    });
+    }, 10000);
 
     it('should create a workspace', () => {
+      const wsSlug = `test-workspace-${Date.now()}`;
       return request(app.getHttpServer())
         .post('/api/workspaces/workspaces')
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           organizationId,
           name: 'Test Workspace',
-          slug: 'test-workspace',
+          slug: wsSlug,
           description: 'Test workspace description',
         })
         .expect(201)
-        .expect((res) => {
+        .expect((res: { body: Record<string, unknown> }) => {
           expect(res.body).toHaveProperty('_id');
           expect(res.body.name).toBe('Test Workspace');
         });

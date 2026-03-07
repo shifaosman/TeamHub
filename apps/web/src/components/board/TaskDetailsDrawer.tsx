@@ -9,7 +9,7 @@ import {
   useUpdateTaskDue,
   useUpdateTaskWatchers,
 } from '@/hooks/useTasks';
-import { Task, TaskStatus } from '@/lib/projectsApi';
+import { Task, TaskStatus, TaskPriority } from '@/lib/projectsApi';
 import { CommentsPanel } from './CommentsPanel';
 import { useWorkspaceMembers } from '@/hooks/useWorkspaces';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,9 +32,11 @@ export function TaskDetailsDrawer({ task, open, onOpenChange }: TaskDetailsDrawe
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<TaskStatus>('todo');
+  const [priority, setPriority] = useState<TaskPriority>('medium');
+  const [labels, setLabels] = useState<string[]>([]);
   const [assigneeId, setAssigneeId] = useState<string>('');
-  const [dueDate, setDueDate] = useState<string>(''); // YYYY-MM-DD
-  const [dueTime, setDueTime] = useState<string>(''); // HH:mm
+  const [dueDate, setDueDate] = useState<string>('');
+  const [dueTime, setDueTime] = useState<string>('');
 
   const { data: workspaceMembers } = useWorkspaceMembers(task?.workspaceId || '');
 
@@ -57,6 +59,8 @@ export function TaskDetailsDrawer({ task, open, onOpenChange }: TaskDetailsDrawe
     setTitle(task.title || '');
     setDescription(task.description || '');
     setStatus(task.status || 'todo');
+    setPriority((task.priority as TaskPriority) || 'medium');
+    setLabels(task.labels ?? []);
     setAssigneeId(task.assigneeId || '');
     if (task.dueAt) {
       const d = new Date(task.dueAt);
@@ -87,6 +91,8 @@ export function TaskDetailsDrawer({ task, open, onOpenChange }: TaskDetailsDrawe
         title: title.trim(),
         description: description.trim() ? description.trim() : null,
         status,
+        priority,
+        labels,
       });
       toast({ title: 'Task updated', description: 'Changes saved.', variant: 'success' });
       onOpenChange(false);
@@ -294,12 +300,34 @@ export function TaskDetailsDrawer({ task, open, onOpenChange }: TaskDetailsDrawe
                 value={status}
                 onChange={(e) => setStatus(e.target.value as TaskStatus)}
               >
-                <option value="todo">todo</option>
-                <option value="in-progress">in-progress</option>
-                <option value="done">done</option>
+                <option value="todo">To do</option>
+                <option value="in-progress">In progress</option>
+                <option value="done">Done</option>
               </select>
             </div>
             <div className="space-y-1">
+              <div className="text-sm font-medium">Priority</div>
+              <select
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+                value={priority}
+                onChange={(e) => setPriority(e.target.value as TaskPriority)}
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+            <div className="col-span-2 space-y-1">
+              <div className="text-sm font-medium">Labels</div>
+              <input
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+                placeholder="bug, feature (comma-separated)"
+                value={labels.join(', ')}
+                onChange={(e) => setLabels(e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
+              />
+            </div>
+            <div className="col-span-2 space-y-1">
               <div className="text-sm font-medium">Assignee</div>
               <select
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"

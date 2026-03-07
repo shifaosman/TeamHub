@@ -37,6 +37,12 @@ export class File {
 
   @Prop({ type: Object })
   metadata?: Record<string, unknown>;
+
+  @Prop({ index: true })
+  folderId?: string;
+
+  @Prop({ type: [String], default: [] })
+  tags?: string[];
 }
 
 export const FileSchema = SchemaFactory.createForClass(File);

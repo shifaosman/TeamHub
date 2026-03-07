@@ -7,6 +7,7 @@ import { MessageEditHistory, MessageEditHistorySchema } from './schemas/message-
 import { Bookmark, BookmarkSchema } from './schemas/bookmark.schema';
 import { ChannelsModule } from '../channels/channels.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ActivityModule } from '../activity/activity.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     ]),
     ChannelsModule,
     NotificationsModule,
+    ActivityModule,
   ],
   providers: [MessagesService],
   controllers: [MessagesController],

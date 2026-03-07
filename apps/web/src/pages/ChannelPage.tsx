@@ -1,6 +1,5 @@
 import { useParams } from 'react-router-dom';
 import { MessageList } from '@/components/messages/MessageList';
-import { MessageInput } from '@/components/messages/MessageInput';
 import { useChannels } from '@/hooks/useChannels';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -36,9 +35,8 @@ export function ChannelPage() {
           )}
         </div>
       </header>
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden">
         <MessageList channelId={channelId} />
-        <MessageInput channelId={channelId} />
       </div>
     </MainLayout>
   );

@@ -5,6 +5,8 @@ export type TaskDocument = HydratedDocument<Task>;
 
 export type TaskStatus = 'todo' | 'in-progress' | 'done';
 
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+
 @Schema({ timestamps: true })
 export class Task {
   @Prop({ required: true, index: true })
@@ -20,7 +22,6 @@ export class Task {
   @Prop({ index: true })
   sourceChannelId?: string;
 
-  // Stored for convenience/debugging (workspaceId already exists and is required)
   @Prop({ index: true })
   sourceWorkspaceId?: string;
 
@@ -32,6 +33,12 @@ export class Task {
 
   @Prop({ type: String, enum: ['todo', 'in-progress', 'done'], default: 'todo', index: true })
   status!: TaskStatus;
+
+  @Prop({ type: String, enum: ['low', 'medium', 'high', 'urgent'], default: 'medium', index: true })
+  priority?: TaskPriority;
+
+  @Prop({ type: [String], default: [], index: true })
+  labels?: string[];
 
   @Prop({ type: String, default: null, index: true })
   assigneeId?: string | null;

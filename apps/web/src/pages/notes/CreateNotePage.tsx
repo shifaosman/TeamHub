@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useCreateNote } from '@/hooks/useNotes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,9 +9,11 @@ import { MainLayout } from '@/components/layout/MainLayout';
 export function CreateNotePage() {
   const navigate = useNavigate();
   const { workspaceId } = useParams<{ workspaceId: string }>();
+  const location = useLocation();
   const createNote = useCreateNote();
+  const initialTitle = (location.state as { title?: string } | null)?.title ?? '';
   const [formData, setFormData] = useState({
-    title: '',
+    title: initialTitle,
     content: '',
   });
   const [error, setError] = useState('');

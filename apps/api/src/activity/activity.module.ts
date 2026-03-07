@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { WorkspacesModule } from '../workspaces/workspaces.module';
 import { Task, TaskSchema } from '../tasks/schemas/task.schema';
@@ -14,7 +14,7 @@ import { Activity, ActivitySchema } from './schemas/activity.schema';
       { name: Task.name, schema: TaskSchema },
       { name: Project.name, schema: ProjectSchema },
     ]),
-    WorkspacesModule,
+    forwardRef(() => WorkspacesModule),
   ],
   controllers: [ActivityController],
   providers: [ActivityService],

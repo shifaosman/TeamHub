@@ -15,4 +15,9 @@ export class UploadFileDto {
   @IsOptional()
   @IsBoolean()
   declare isPublic?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  declare folderId?: string;
 }

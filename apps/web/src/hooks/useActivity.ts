@@ -1,14 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
-import { activityApi, ActivityItem } from '@/lib/activityApi';
+import { activityApi, ActivityItem, ActivityEntityType } from '@/lib/activityApi';
 
 export const activityKeys = {
   all: ['activity'] as const,
-  list: (params: { workspaceId?: string; projectId?: string; taskId?: string; limit?: number; offset?: number }) =>
+  list: (params: {
+    workspaceId?: string;
+    projectId?: string;
+    taskId?: string;
+    entityType?: ActivityEntityType;
+    limit?: number;
+    offset?: number;
+  }) =>
     [
       ...activityKeys.all,
       params.workspaceId ?? null,
       params.projectId ?? null,
       params.taskId ?? null,
+      params.entityType ?? null,
       params.limit ?? null,
       params.offset ?? null,
     ] as const,
@@ -18,6 +26,7 @@ export function useActivity(params: {
   workspaceId?: string;
   projectId?: string;
   taskId?: string;
+  entityType?: ActivityEntityType;
   limit?: number;
   offset?: number;
 }) {

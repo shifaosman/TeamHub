@@ -20,6 +20,8 @@ export interface Project {
 
 export type TaskStatus = 'todo' | 'in-progress' | 'done';
 
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+
 export interface Task {
   _id: string;
   projectId: string;
@@ -30,6 +32,8 @@ export interface Task {
   title: string;
   description?: string;
   status: TaskStatus;
+  priority?: TaskPriority;
+  labels?: string[];
   assigneeId?: string | null;
   watcherIds?: string[];
   dueAt?: string;
@@ -106,7 +110,10 @@ export const projectsApi = {
     title: string;
     description?: string;
     status?: TaskStatus;
+    priority?: TaskPriority;
+    labels?: string[];
     assigneeId?: string | null;
+    dueAt?: string | null;
   }): Promise<Task> {
     const response = await api.post('/tasks', data);
     return response.data;
@@ -125,7 +132,14 @@ export const projectsApi = {
 
   async updateTask(
     taskId: string,
-    data: { title?: string; description?: string | null; status?: TaskStatus; assigneeId?: string | null }
+    data: {
+      title?: string;
+      description?: string | null;
+      status?: TaskStatus;
+      priority?: TaskPriority;
+      labels?: string[];
+      assigneeId?: string | null;
+    }
   ): Promise<Task> {
     const response = await api.patch(`/tasks/${taskId}`, data);
     return response.data;

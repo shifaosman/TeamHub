@@ -1,10 +1,33 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { Task, TaskDocument } from '../tasks/schemas/task.schema';
 import { Project, ProjectDocument } from '../projects/schemas/project.schema';
-import { Activity, ActivityDocument, ActivityType } from './schemas/activity.schema';
+import {
+  Activity,
+  ActivityDocument,
+  ActivityType,
+  ActivityEntityType,
+} from './schemas/activity.schema';
+
+export type RecordActivityParams = {
+  workspaceId: string;
+  projectId?: string;
+  taskId?: string;
+  actorId: string;
+  type: ActivityType;
+  entityType?: ActivityEntityType;
+  entityId?: string;
+  metadata?: Record<string, unknown>;
+};
 
 @Injectable()
 export class ActivityService {
@@ -12,17 +35,11 @@ export class ActivityService {
     @InjectModel(Activity.name) private activityModel: Model<ActivityDocument>,
     @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
     @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
+    @Inject(forwardRef(() => WorkspacesService))
     private workspacesService: WorkspacesService
   ) {}
 
-  async record(data: {
-    workspaceId: string;
-    projectId?: string;
-    taskId?: string;
-    actorId: string;
-    type: ActivityType;
-    metadata?: Record<string, unknown>;
-  }): Promise<ActivityDocument> {
+  async record(data: RecordActivityParams): Promise<ActivityDocument> {
     const activity = new this.activityModel(data);
     return activity.save();
   }
@@ -32,6 +49,7 @@ export class ActivityService {
     workspaceId?: string;
     projectId?: string;
     taskId?: string;
+    entityType?: ActivityEntityType;
     limit?: number;
     offset?: number;
   }): Promise<ActivityDocument[]> {
@@ -52,16 +70,62 @@ export class ActivityService {
       throw new ForbiddenException('You are not a member of this workspace');
     }
 
-    const query: any = { workspaceId };
+    const query: Record<string, unknown> = { workspaceId };
     if (params.projectId) query.projectId = params.projectId;
     if (params.taskId) query.taskId = params.taskId;
+    if (params.entityType) query.entityType = params.entityType;
 
-    return this.activityModel
-      .find(query)
-      .sort({ createdAt: -1 })
-      .limit(Math.min(limit, 200))
-      .skip(offset)
-      .exec();
+    const pipeline: any[] = [
+      { $match: query },
+      { $sort: { createdAt: -1 } },
+      { $skip: offset },
+      { $limit: Math.min(limit, 200) },
+      {
+        $lookup: {
+          from: 'users',
+          let: { aid: '$actorId' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$_id', '$$aid'] },
+                    { $eq: [{ $toString: '$_id' }, { $ifNull: ['$$aid', ''] }] },
+                  ],
+                },
+              },
+            },
+            { $project: { username: 1, firstName: 1, lastName: 1, avatar: 1 } },
+          ],
+          as: 'actor',
+        },
+      },
+      { $unwind: { path: '$actor', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          workspaceId: 1,
+          projectId: 1,
+          taskId: 1,
+          actorId: 1,
+          type: 1,
+          entityType: 1,
+          entityId: 1,
+          metadata: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          actor: {
+            _id: '$actor._id',
+            username: '$actor.username',
+            firstName: '$actor.firstName',
+            lastName: '$actor.lastName',
+            avatar: '$actor.avatar',
+          },
+        },
+      },
+    ];
+
+    const results = await this.activityModel.aggregate(pipeline).exec();
+    return results as ActivityDocument[];
   }
 
   private async resolveWorkspaceId(params: {

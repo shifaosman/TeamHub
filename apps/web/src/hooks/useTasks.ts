@@ -30,7 +30,10 @@ export function useCreateTask() {
       title: string;
       description?: string;
       status?: TaskStatus;
+      priority?: 'low' | 'medium' | 'high' | 'urgent';
+      labels?: string[];
       assigneeId?: string | null;
+      dueAt?: string | null;
     }) => projectsApi.createTask(data),
     onSuccess: (task) => {
       // Refresh all task queries for this project
@@ -67,10 +70,11 @@ export function useUpdateTask() {
       title?: string;
       description?: string | null;
       status?: TaskStatus;
+      priority?: 'low' | 'medium' | 'high' | 'urgent';
+      labels?: string[];
       assigneeId?: string | null;
     }) => {
       const { taskId, ...payload } = data;
-      // IMPORTANT: do not send taskId in body (backend ValidationPipe forbids unknown props)
       return projectsApi.updateTask(taskId, payload);
     },
     onSuccess: (task) => {

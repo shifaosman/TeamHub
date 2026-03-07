@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { WorkspacesService } from './workspaces.service';
 import { WorkspacesController } from './workspaces.controller';
@@ -8,6 +8,7 @@ import { WorkspaceMember, WorkspaceMemberSchema } from './schemas/workspace-memb
 import { WorkspaceInvite, WorkspaceInviteSchema } from './schemas/workspace-invite.schema';
 import { AuditLog, AuditLogSchema } from './schemas/audit-log.schema';
 import { UsersModule } from '../users/users.module';
+import { ActivityModule } from '../activity/activity.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { UsersModule } from '../users/users.module';
       { name: AuditLog.name, schema: AuditLogSchema },
     ]),
     UsersModule,
+    forwardRef(() => ActivityModule),
   ],
   providers: [WorkspacesService],
   controllers: [WorkspacesController],

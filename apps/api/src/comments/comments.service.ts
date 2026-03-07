@@ -65,6 +65,8 @@ export class CommentsService {
       taskId: dto.taskId,
       actorId: userId,
       type: 'COMMENT_ADDED',
+      entityType: 'task',
+      entityId: dto.taskId,
       metadata: { commentId: saved._id.toString() },
     });
 
@@ -125,6 +127,8 @@ export class CommentsService {
       taskId: comment.taskId,
       actorId: userId,
       type: 'COMMENT_DELETED',
+      entityType: 'task',
+      entityId: comment.taskId,
       metadata: { commentId: id },
     });
   }

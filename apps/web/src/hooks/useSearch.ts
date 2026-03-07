@@ -15,6 +15,10 @@ export interface SearchResult {
     avatar?: string;
     role: string;
   }>;
+  notes?: Array<{ _id: string; title: string; content?: string; workspaceId: string; updatedAt?: string }>;
+  tasks?: Array<{ _id: string; title: string; projectId: string; workspaceId: string; status?: string; updatedAt?: string }>;
+  files?: Array<{ _id: string; originalName: string; filename: string; workspaceId: string; createdAt?: string }>;
+  projects?: Array<{ _id: string; name: string; description?: string; workspaceId: string }>;
   total: number;
 }
 

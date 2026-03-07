@@ -28,7 +28,8 @@ function renderText(item: ActivityItem, members: any[] | undefined) {
     case 'TASK_MOVED':
       return `${actor} moved "${md.title || 'task'}" to ${md.status || 'a new status'}`;
     case 'TASK_ASSIGNED': {
-      const assignee = md.assigneeId ? labelForUser(members, md.assigneeId) : 'someone';
+      const assigneeId = md.assigneeId != null ? String(md.assigneeId) : '';
+      const assignee = assigneeId ? labelForUser(members, assigneeId) : 'someone';
       return `${actor} assigned "${md.title || 'task'}" to ${assignee}`;
     }
     case 'TASK_WATCHERS_UPDATED':
@@ -75,15 +76,18 @@ export function ActivityFeed({ workspaceId, items, isLoading, error }: ActivityF
   }
 
   if (rows.length === 0) {
-    return <div className="text-sm text-muted-foreground">No activity yet.</div>;
+    return <div className="rounded-lg bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">No activity yet.</div>;
   }
 
   return (
     <div className="space-y-2">
       {rows.map((item) => (
-        <div key={item._id} className="rounded-md border border-border bg-card px-3 py-2">
-          <div className="text-sm">{renderText(item, members)}</div>
-          <div className="text-xs text-muted-foreground mt-1">
+        <div
+          key={item._id}
+          className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5 transition-colors hover:border-border"
+        >
+          <div className="text-sm text-foreground">{renderText(item, members)}</div>
+          <div className="mt-1 text-xs text-muted-foreground">
             {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
           </div>
         </div>

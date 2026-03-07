@@ -49,6 +49,8 @@ export class ProjectsService {
       projectId: saved._id.toString(),
       actorId: userId,
       type: 'PROJECT_CREATED',
+      entityType: 'project',
+      entityId: saved._id.toString(),
       metadata: { name: saved.name },
     });
     return saved;
@@ -106,6 +108,8 @@ export class ProjectsService {
       projectId: saved._id.toString(),
       actorId: userId,
       type: 'PROJECT_UPDATED',
+      entityType: 'project',
+      entityId: saved._id.toString(),
       metadata: { name: saved.name },
     });
     return saved;
@@ -142,6 +146,8 @@ export class ProjectsService {
       projectId: saved._id.toString(),
       actorId: actorUserId,
       type: 'PROJECT_MEMBER_ADDED',
+      entityType: 'project',
+      entityId: saved._id.toString(),
       metadata: { userId: dto.userId, role },
     });
     return saved;
@@ -175,6 +181,8 @@ export class ProjectsService {
       projectId: saved._id.toString(),
       actorId: actorUserId,
       type: 'PROJECT_MEMBER_ROLE_UPDATED',
+      entityType: 'project',
+      entityId: saved._id.toString(),
       metadata: { userId: targetUserId, role: dto.role },
     });
     return saved;
@@ -201,6 +209,8 @@ export class ProjectsService {
       projectId: id,
       actorId: userId,
       type: 'PROJECT_DELETED',
+      entityType: 'project',
+      entityId: id,
       metadata: { projectId: id },
     });
   }

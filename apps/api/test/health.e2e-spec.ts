@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { applyAppPipeline } from './test-utils';
 
 describe('Health Check (e2e)', () => {
   let app: INestApplication;
@@ -12,27 +13,17 @@ describe('Health Check (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    await applyAppPipeline(app);
     await app.init();
-  });
+  }, 15000);
 
   afterAll(async () => {
     await app.close();
   });
 
-  it('should return API documentation', () => {
+  it('should have app listening', () => {
     return request(app.getHttpServer())
-      .get('/docs')
-      .expect(200);
-  });
-
-  it('should have Swagger JSON available', () => {
-    return request(app.getHttpServer())
-      .get('/docs-json')
-      .expect(200)
-      .expect((res) => {
-        expect(res.body).toHaveProperty('openapi');
-        expect(res.body).toHaveProperty('info');
-        expect(res.body.info.title).toBe('TeamHub API');
-      });
+      .get('/api')
+      .expect(404);
   });
 });

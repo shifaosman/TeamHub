@@ -14,6 +14,7 @@ import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { WorkspacesService } from '../workspaces/workspaces.service';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class NotesService {
@@ -23,7 +24,8 @@ export class NotesService {
     @InjectModel(NoteComment.name) private noteCommentModel: Model<NoteCommentDocument>,
     @InjectModel(NoteCollaborator.name)
     private noteCollaboratorModel: Model<NoteCollaboratorDocument>,
-    private workspacesService: WorkspacesService
+    private workspacesService: WorkspacesService,
+    private activityService: ActivityService
   ) {}
 
   async create(userId: string, createNoteDto: CreateNoteDto): Promise<NoteDocument> {
@@ -63,6 +65,15 @@ export class NotesService {
       noteId: savedNote._id.toString(),
       userId,
       permission: 'admin',
+    });
+
+    await this.activityService.record({
+      workspaceId: savedNote.workspaceId,
+      actorId: userId,
+      type: 'NOTE_CREATED',
+      entityType: 'note',
+      entityId: savedNote._id.toString(),
+      metadata: { title: savedNote.title },
     });
 
     return savedNote;
@@ -163,7 +174,20 @@ export class NotesService {
     }
 
     note.updatedBy = userId;
-    return note.save();
+    const saved = await note.save();
+
+    if (updateDto.title || updateDto.content) {
+      await this.activityService.record({
+        workspaceId: note.workspaceId,
+        actorId: userId,
+        type: 'NOTE_EDITED',
+        entityType: 'note',
+        entityId: note._id.toString(),
+        metadata: { title: saved.title },
+      });
+    }
+
+    return saved;
   }
 
   async delete(id: string, userId: string): Promise<void> {

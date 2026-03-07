@@ -86,6 +86,18 @@ export function useDeleteMessage() {
   });
 }
 
+export function useThreadMessages(threadId: string | null) {
+  return useQuery<Message[]>({
+    queryKey: ['messages', 'thread', threadId],
+    queryFn: async () => {
+      if (!threadId) return [];
+      const response = await api.get(`/messages/thread/${threadId}`);
+      return response.data;
+    },
+    enabled: !!threadId,
+  });
+}
+
 export function useAddReaction() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -95,6 +107,7 @@ export function useAddReaction() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['messages', data.channelId] });
+      queryClient.invalidateQueries({ queryKey: ['messages', 'thread'] });
     },
   });
 }

@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { NoteEditor } from '@/components/notes/NoteEditor';
+import { CollaborativeNoteEditor } from '@/components/notes/CollaborativeNoteEditor';
 import { NoteComments } from '@/components/notes/NoteComments';
 import { useNote, useNoteVersions } from '@/hooks/useNotes';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
@@ -62,7 +62,7 @@ export function NotePage() {
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 bg-card text-card-foreground border-b border-border overflow-hidden">
-            <NoteEditor noteId={noteId} />
+            <CollaborativeNoteEditor key={noteId} noteId={noteId} />
           </div>
           <div className="bg-card text-card-foreground">
             <NoteComments noteId={noteId} />

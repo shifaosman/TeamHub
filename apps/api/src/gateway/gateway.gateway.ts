@@ -399,12 +399,30 @@ export class GatewayGateway implements OnGatewayConnection, OnGatewayDisconnect 
       return { error: 'Not authenticated' };
     }
 
-    // Broadcast cursor position to other users in the note room (excluding sender)
     client.to(`note:${data.noteId}`).emit('note:cursor', {
       noteId: data.noteId,
       userId: client.userId,
       position: data.position,
       selection: data.selection,
+    });
+
+    return { success: true };
+  }
+
+  /** Yjs CRDT sync: receive update from client, broadcast to other collaborators in the note room */
+  @SubscribeMessage('note:ydoc_sync')
+  async handleNoteYdocSync(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { noteId: string; update: string; userId: string }
+  ) {
+    if (!client.userId) {
+      return { error: 'Not authenticated' };
+    }
+
+    client.to(`note:${data.noteId}`).emit('note:ydoc_sync', {
+      noteId: data.noteId,
+      update: data.update,
+      userId: data.userId,
     });
 
     return { success: true };

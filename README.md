@@ -1,324 +1,246 @@
-# TeamHub — Real-Time Team Collaboration Platform
+# TeamHub
 
-> A production-ready, full-stack collaboration platform built with the MERN stack and NestJS — featuring real-time messaging, multi-tenant workspaces, collaborative notes, and role-based access control.
+**Real-time team collaboration platform** — A modern SaaS-style app (inspired by Linear, Slack, Notion) with multi-tenant workspaces, real-time messaging, collaborative notes, and Kanban project boards. Built with React, NestJS, MongoDB, Redis, and Socket.io. Features a clean UI (Tailwind + shadcn/ui), global command palette (`Ctrl/Cmd + K`), loading skeletons, empty states, and production-ready architecture.
 
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green)](https://nodejs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-brightgreen)](https://mongoosejs.com)
-[![NestJS](https://img.shields.io/badge/NestJS-10-red)](https://nestjs.com)
-[![React](https://img.shields.io/badge/React-18-61DAFB)](https://reactjs.org)
-
----
-
-## 🔗 Live Demo
-
-| Resource | Link |
-|---|---|
-| Web App | **Coming soon** |
-| API Docs (Swagger) | **Coming soon** |
+| Link | URL |
+|------|-----|
 | Repository | [github.com/shifaosman/TeamHub](https://github.com/shifaosman/TeamHub) |
+| Live demo / API docs | *Add when deployed* |
 
 ---
 
-## 📖 Description
+## Portfolio Summary
 
-**TeamHub** is a full-stack, production-grade team collaboration platform inspired by Slack and Notion. It provides real-time messaging, shared workspaces, collaborative note-taking, project tracking, and file management — all within a secure, multi-tenant architecture.
+*Use this paragraph on your GitHub profile, portfolio site, or job applications:*
 
-The platform is built to demonstrate proficiency across the entire stack: a React + TypeScript frontend, a NestJS REST API with WebSocket support, a MongoDB database, and Redis-backed background job processing. It reflects real-world engineering decisions around scalability, security, and developer experience.
-
----
-
-## ✨ Key Features
-
-- **Real-time messaging** — channels, direct messages, threads, reactions, mentions, typing indicators, and online presence powered by Socket.io
-- **Multi-tenant workspaces** — isolated workspaces with role-based access control (Owner / Admin / Member / Guest)
-- **Collaborative notes** — a Notion-inspired notes editor with version history and inline comments
-- **Project & task tracking** — kanban-style boards with drag-and-drop task management
-- **File sharing** — upload, preview, and manage files via AWS S3 or local storage fallback
-- **Global search** — command-palette search (`Ctrl/Cmd + K`) with filters by channel, user, date, file, and link
-- **Notifications** — in-app and email notifications with per-user preference settings
-- **Audit logs** — activity history across workspaces for compliance and transparency
-- **Secure authentication** — JWT access tokens + refresh token rotation, bcrypt password hashing, and rate limiting
+> **TeamHub** is a production-ready collaboration platform that solves distributed team communication and project coordination. I designed and built the full stack: a modular NestJS API with JWT auth, refresh-token rotation, and a Socket.io gateway (Redis adapter) for real-time messaging and presence; a React 18 + TypeScript frontend with TanStack Query, Zustand, and a global command palette; and a shared monorepo package for type-safe contracts. Key technical highlights include multi-tenant RBAC, BullMQ background jobs for email and notifications, MongoDB + Mongoose data modeling, AWS S3 (with local fallback) for file storage, Swagger/OpenAPI docs, Docker Compose for local dev, and GitHub Actions CI (lint, unit, e2e, build). The project showcases end-to-end ownership, security-conscious design, and scalable real-time systems—suitable for portfolio and technical discussions in interviews.
 
 ---
 
-## 🧱 Tech Stack
+## Screenshots
 
-### Frontend
-| Technology | Purpose |
-|---|---|
-| React 18 | UI framework |
-| TypeScript | Static typing |
-| Vite | Build tool & dev server |
-| Tailwind CSS + shadcn/ui | Styling and component library |
-| React Router v6 | Client-side routing |
-| TanStack Query (React Query) | Server state management & caching |
-| Zustand | Global client state management |
-| Zod | Schema validation |
-| Socket.io Client | Real-time WebSocket communication |
+| Dashboard | Notes | Projects | Activity |
+|-----------|-------|----------|-----------|
+| ![Dashboard](docs/screenshots/01-dashboard.png) | ![Notes](docs/screenshots/02-notes.png) | ![Projects](docs/screenshots/04-projects.png) | *Activity timeline: `docs/screenshots/05-activity.png`* |
 
-### Backend
-| Technology | Purpose |
-|---|---|
-| NestJS 10 | Server framework (modular, scalable) |
-| Node.js 18+ | Runtime |
-| TypeScript | Static typing |
-| MongoDB + Mongoose | Primary database and ODM |
-| Redis + ioredis | Caching, pub/sub, Socket.io adapter |
-| BullMQ | Background job queues (emails, notifications) |
-| JWT (access + refresh tokens) | Authentication |
-| Passport.js | Auth middleware |
-| Swagger / OpenAPI | API documentation |
-| AWS S3 SDK | File storage |
-| Nodemailer | Email delivery |
-| Helmet + Rate Limiting | Security hardening |
-
-### Infrastructure & DevOps
-| Technology | Purpose |
-|---|---|
-| Docker + docker-compose | Containerized local and production environments |
-| GitHub Actions | CI/CD pipeline |
-| npm Workspaces | Monorepo management |
+*Add more screenshots to `docs/screenshots/` as needed (e.g. Activity timeline).*
 
 ---
 
-## 🏗️ Architecture Overview
+## Key Features
 
-TeamHub follows a monorepo layout with a clear separation between frontend and backend concerns.
+- **Modern UI** — Clean layout, consistent typography, soft shadows, rounded corners, light/dark mode, loading skeletons, and empty states (Linear/Slack/Notion-inspired).
+- **Real-time messaging** — Channels with **@mentions** (autocomplete when typing `@`), **emoji reactions** (add/remove, real-time via Socket.io), **threaded replies** (side panel), typing indicators, and online presence.
+- **Multi-tenant workspaces** — Isolated workspaces with RBAC (Owner / Admin / Member / Guest).
+- **Collaborative notes** — Notion-style notes with version history and inline comments.
+- **Project & task tracking** — Kanban boards with drag-and-drop (@dnd-kit), **task priority** (low/medium/high/urgent), **labels/tags**, due dates, assignees, and a task detail drawer (description, comments, due date, watchers).
+- **File sharing** — Upload, preview, and manage files (AWS S3 or local storage).
+- **File Collaboration System** — Workspace file hub at `/workspaces/:workspaceId/files`: upload (button + drag-and-drop), search and filter by type/name, grid and list views, file detail drawer with preview (images/video/document placeholder), metadata (size, type, uploader, date), comments thread, and download/delete. Helps teams centralize and manage assets in one place (Dropbox/Notion/Slack-style).
+- **Smart command palette** — `Ctrl/Cmd + K` opens a Raycast/Linear-style command palette: **search** across channels, projects, notes, tasks, messages, and files; **quick actions** (e.g. `task Fix bug`, `note Sprint plan`, `analytics`, `activity`); **pages** (Dashboard, Activity, Analytics, Notes, Projects); **recent actions**; keyboard-first (↑↓ navigate, Enter select, Esc close). Prefix-based command parsing for create-note, create-task, go-to-page, and open-entity. Improves navigation and productivity without leaving the keyboard.
+- **Dashboard** — Workspace home with recent activity, active projects, channels, and task CTA.
+- **Notifications** — In-app and email with per-user preferences; BullMQ for async delivery.
+- **Workspace Activity Timeline** — Central feed of workspace events: who created or moved tasks, posted messages, uploaded files, edited notes, created channels, or joined the workspace. Filter by type (tasks, projects, notes, messages, files, channels), grouped by day (Today, Yesterday, Earlier this week), with load-more and clean timeline UI for team visibility and auditability.
+- **Workspace Analytics Dashboard** — Metrics page at `/workspaces/:workspaceId/analytics` to measure progress and collaboration: KPI cards (tasks, completed, projects, members), tasks created vs completed over time, messages over time, task status and priority distribution, project completion progress bars, most active channels and members, and collaboration snapshot (notes edited, files uploaded, messages). Date range filter (7d / 30d / 90d). Helps teams answer: Are we completing work? Which projects are moving? Who is contributing most?
+- **Audit & activity** — Activity model and API back the timeline and analytics; events are recorded automatically from projects, tasks, notes, messages, channels, files, and workspace membership.
+- **Authentication & security** — JWT access + refresh token rotation, bcrypt, rate limiting, Helmet. API validates required env in production.
+- **Automated testing** — **Frontend:** Vitest + React Testing Library; tests for login page (form render, links, submit, error display) and command palette (closed state, open with search input and page results). Run with `npm run test:web`. **Backend:** Jest unit tests (e.g. `AuthService`) and e2e/integration tests for auth (register, login, token validation), notes (create, list, update), analytics (workspace analytics endpoint), and files (upload, list). Run unit tests with `npm run test:api`; e2e with `npm run test:e2e` from `apps/api` (requires MongoDB and optionally Redis).
+
+---
+
+## Tech Stack
+
+| Layer | Technologies |
+|-------|--------------|
+| **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, Radix UI, Recharts, Framer Motion (optional), React Router v6, TanStack Query, Zustand, Zod, Socket.io Client. Lazy-loaded routes, command palette (⌘K). |
+| **Backend** | NestJS 10, Node.js 18+, TypeScript, MongoDB (Mongoose), Redis (ioredis), BullMQ, JWT, Passport.js, Swagger, AWS S3, Nodemailer |
+| **Infrastructure** | Docker & Docker Compose, GitHub Actions (CI) |
+| **Monorepo** | npm workspaces, `@teamhub/shared` (Zod schemas & types) |
+
+---
+
+## Architecture Overview
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                     Browser (React 18)                   │
-│  Vite · TanStack Query · Zustand · Socket.io Client      │
+│                  Browser (React 18 + Vite)                │
+│     TanStack Query · Zustand · Socket.io Client           │
 └────────────────────────┬─────────────────────────────────┘
-                         │  HTTP (REST)  /  WebSocket
+                         │  REST  /  WebSocket
                          ▼
 ┌──────────────────────────────────────────────────────────┐
-│                  NestJS API  (Port 2000)                  │
-│  REST Controllers → Services → Mongoose Models           │
-│  Socket.io Gateway ─── Redis Adapter (scaling)           │
-│  BullMQ Workers (email, notifications)                   │
-└────────┬────────────────────────────┬────────────────────┘
+│                  NestJS API (e.g. port 2000)              │
+│     REST → Services → Mongoose · Socket.io Gateway        │
+│     BullMQ workers (email, notifications)                 │
+└────────┬────────────────────────────┬─────────────────────┘
          │                            │
          ▼                            ▼
 ┌─────────────────┐        ┌─────────────────────┐
 │    MongoDB      │        │       Redis          │
-│  (Primary DB)   │        │  (Cache · Pub/Sub ·  │
-│                 │        │   Queue · Presence)  │
+│  (Primary DB)   │        │  Cache · Pub/Sub ·   │
+│                 │        │  Queue · Presence    │
 └─────────────────┘        └─────────────────────┘
          │
          ▼
 ┌─────────────────────────────┐
-│   AWS S3 / Local Storage    │
-│   (File uploads & previews) │
+│   AWS S3 / Local Storage     │
 └─────────────────────────────┘
 ```
 
-**Request flow:**
-1. The **React** client makes REST calls or opens a WebSocket connection to the **NestJS API**.
-2. The API authenticates requests via **JWT**, enforces **RBAC** permissions, and delegates to domain services.
-3. Domain services read and write data to **MongoDB** via Mongoose.
-4. **Real-time events** (messages, presence, typing) flow through the Socket.io Gateway, scaled horizontally via a **Redis** adapter.
-5. Background tasks (email delivery, notification fan-out) are offloaded to **BullMQ** workers backed by Redis.
-6. Uploaded files are stored in **AWS S3** (production) or local disk (development).
+- **Request flow:** React → NestJS (JWT + RBAC) → services → MongoDB; real-time via Socket.io gateway; background work via BullMQ + Redis.
+- **Activity timeline:** Events (project/task/note/message/file/channel/workspace) are recorded by the Activity service and stored in MongoDB. The feed API supports workspace-scoped listing with optional `entityType` filter and pagination; the frontend shows a grouped timeline with actor info and links to the related entity.
+- **Analytics:** The analytics module exposes `GET /workspaces/:workspaceId/analytics?period=7d|30d|90d`. It uses MongoDB aggregations to compute overview counts, task time-series (created/completed), task status and priority breakdowns, project progress, most active channels (by message count), most active users (by activity count), and collaboration time-series (messages, notes edited, files uploaded). All queries are workspace-scoped and access-checked.
+- **File collaboration:** The files module supports workspace-scoped upload (with optional `folderId`), list/search with filters (`search`, `mimeType`: image/video/document, `sort`, `order`), file details with uploader and preview URL, and file comments (add/list). Metadata includes `workspaceId`, `uploadedBy`, `originalName`, `mimeType`, `size`, `createdAt`/`updatedAt`. Storage remains AWS S3 or local; MongoDB holds file and file-comment metadata. Sidebar and command palette link to the File Hub.
 
 ---
 
-## 🖼️ Screenshots
-
-**Dashboard**
-
-![Dashboard with Workspace](./docs/screenshots/01b-dashboard-with-workspace.png)
-
-**Collaborative Notes**
-
-![Notes Editor](./docs/screenshots/02-notes.png)
-
-**Project Board**
-
-![Projects Kanban](./docs/screenshots/04-projects.png)
-
----
-
-## 🚀 Installation
+## Installation & Run Locally
 
 ### Prerequisites
 
-- Node.js ≥ 18
-- npm ≥ 9
-- Docker & docker-compose
+- Node.js ≥ 18, npm ≥ 9
+- Docker & Docker Compose (for MongoDB and Redis)
 
-### 1. Clone the repository
+### Steps
 
-```bash
-git clone https://github.com/shifaosman/TeamHub.git
-cd TeamHub
-```
+1. **Clone and install**
 
-### 2. Install dependencies
+   ```bash
+   git clone https://github.com/shifaosman/TeamHub.git
+   cd TeamHub
+   npm install
+   ```
 
-```bash
-npm install
-```
+2. **Environment**
 
-### 3. Configure environment variables
+   ```bash
+   cp apps/api/.env.example apps/api/.env
+   ```
 
-```bash
-# Backend
-cp apps/api/.env.example apps/api/.env
+   Edit `apps/api/.env` (e.g. `JWT_SECRET`, `JWT_REFRESH_SECRET` via `openssl rand -base64 32`). For frontend, set `VITE_API_URL` and `VITE_WS_URL` in `apps/web/.env` if you use one.
 
-# Frontend
-cp apps/web/.env.example apps/web/.env   # if applicable
-```
+3. **Start MongoDB and Redis**
 
-Update `apps/api/.env` with your local values (see [Environment Variables](#-environment-variables) below).
+   ```bash
+   docker-compose up -d mongo redis
+   ```
 
-### 4. Start infrastructure services
+4. **Seed data (optional)**
 
-```bash
-# Start MongoDB and Redis via Docker
-docker-compose up -d mongo redis
-```
+   ```bash
+   npm run seed
+   ```
 
-### 5. Seed demo data
+5. **Run dev servers**
 
-```bash
-npm run seed
-```
+   ```bash
+   npm run dev
+   ```
 
-### 6. Start the development servers
+| Service      | URL                    |
+|-------------|------------------------|
+| Frontend    | http://localhost:5173  |
+| Backend API | http://localhost:2000  |
+| Swagger     | http://localhost:2000/docs |
 
-```bash
-npm run dev
-```
+**Demo logins** (after seed):
 
-| Service | URL |
-|---|---|
-| Frontend | http://localhost:5173 |
-| Backend API | http://localhost:2000 |
-| Swagger Docs | http://localhost:2000/docs |
-
-### Demo credentials
-
-| Role | Email | Password |
-|---|---|---|
-| Admin | `admin@teamhub.demo` | `Admin123!` |
+| Role   | Email                | Password   |
+|--------|----------------------|------------|
+| Admin  | `admin@teamhub.demo` | `Admin123!` |
 | Member | `member@teamhub.demo` | `Member123!` |
 
 ---
 
-## 🔑 Environment Variables
-
-### Backend — `apps/api/.env`
-
-| Variable | Description | Example |
-|---|---|---|
-| `NODE_ENV` | Runtime environment | `development` |
-| `PORT` | API server port | `2000` |
-| `MONGODB_URI` | MongoDB connection string | `mongodb://localhost:27017/teamhub` |
-| `REDIS_HOST` | Redis hostname | `localhost` |
-| `REDIS_PORT` | Redis port | `6379` |
-| `JWT_SECRET` | Secret for access token signing | *(generate with `openssl rand -base64 32`)* |
-| `JWT_REFRESH_SECRET` | Secret for refresh token signing | *(generate with `openssl rand -base64 32`)* |
-| `JWT_EXPIRES_IN` | Access token lifetime | `15m` |
-| `JWT_REFRESH_EXPIRES_IN` | Refresh token lifetime | `7d` |
-| `USE_LOCAL_STORAGE` | Use local disk instead of S3 | `true` |
-| `AWS_REGION` | AWS region for S3 | `us-east-1` |
-| `AWS_ACCESS_KEY_ID` | AWS access key | *(from IAM)* |
-| `AWS_SECRET_ACCESS_KEY` | AWS secret key | *(from IAM)* |
-| `AWS_S3_BUCKET` | S3 bucket name | `teamhub-files` |
-| `APP_URL` | Frontend origin (for CORS) | `http://localhost:5173` |
-| `SMTP_HOST` | SMTP server hostname | `smtp.gmail.com` |
-| `SMTP_PORT` | SMTP port | `587` |
-| `SMTP_USER` | SMTP username / email | `you@example.com` |
-| `SMTP_PASS` | SMTP password or app password | *(from email provider)* |
-| `EMAIL_FROM` | Sender address | `noreply@teamhub.com` |
-
-### Frontend — `apps/web/.env`
-
-| Variable | Description | Example |
-|---|---|---|
-| `VITE_API_URL` | Backend REST base URL | `http://localhost:2000/api` |
-| `VITE_WS_URL` | WebSocket server URL | `ws://localhost:2000` |
-
----
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 TeamHub/
 ├── apps/
-│   ├── api/                   # NestJS backend
+│   ├── api/                 # NestJS backend
 │   │   └── src/
-│   │       ├── auth/          # JWT authentication & Passport strategies
-│   │       ├── users/         # User management
-│   │       ├── workspaces/    # Multi-tenant workspace logic
-│   │       ├── channels/      # Messaging channels
-│   │       ├── messages/      # Message CRUD & threading
-│   │       ├── notes/         # Collaborative notes
-│   │       ├── projects/      # Project & task tracking
-│   │       ├── tasks/         # Task management
-│   │       ├── files/         # File upload & S3 integration
-│   │       ├── search/        # Global full-text search
-│   │       ├── notifications/ # In-app & email notifications
-│   │       ├── activity/      # Audit log & activity feed
-│   │       ├── gateway/       # Socket.io WebSocket gateway
-│   │       ├── redis/         # Redis module & adapter
-│   │       └── common/        # Shared guards, decorators, pipes
-│   └── web/                   # React + Vite frontend
+│   │       ├── auth/        # JWT, Passport, sessions
+│   │       ├── users/
+│   │       ├── workspaces/  # Multi-tenant, RBAC
+│   │       ├── channels/    # Messaging channels
+│   │       ├── messages/    # Messages, threads
+│   │       ├── notes/       # Collaborative notes
+│   │       ├── projects/    # Projects
+│   │       ├── tasks/       # Tasks, comments
+│   │       ├── files/       # Uploads, S3/local
+│   │       ├── search/      # Global search
+│   │       ├── notifications/
+│   │       ├── activity/    # Audit / activity
+│   │       ├── analytics/   # Workspace analytics
+│   │       ├── gateway/     # Socket.io
+│   │       ├── redis/
+│   │       └── common/      # Guards, pipes, filters
+│   └── web/                 # React + Vite
 │       └── src/
-│           ├── components/    # Reusable UI components (shadcn/ui)
-│           ├── pages/         # Route-level page components
-│           ├── hooks/         # Custom React hooks
-│           ├── stores/        # Zustand state stores
-│           ├── contexts/      # React context providers
-│           └── lib/           # Utilities and API client
+│           ├── components/
+│           ├── pages/
+│           ├── hooks/
+│           ├── stores/
+│           ├── contexts/
+│           └── lib/
 ├── packages/
-│   └── shared/                # Shared TypeScript types and schemas (Zod)
-├── docs/
-│   └── screenshots/           # Application screenshots
-├── docker-compose.yml         # Local development services
-├── docker-compose.prod.yml    # Production Docker configuration
-└── package.json               # Monorepo root (npm workspaces)
+│   └── shared/              # Shared types & Zod schemas
+├── docs/screenshots/
+├── docker-compose.yml
+└── package.json             # npm workspaces root
 ```
 
 ---
 
-## 💡 What I Learned
+## Environment Variables (summary)
 
-This project was an opportunity to apply and deepen skills across the full stack in a realistic, production-like context:
+**Backend (`apps/api/.env`):** `NODE_ENV`, `PORT`, `MONGODB_URI`, `REDIS_HOST`, `REDIS_PORT`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN`, `USE_LOCAL_STORAGE`, `AWS_*` (if using S3), `APP_URL`, `SMTP_*`, `EMAIL_FROM`.
 
-- **NestJS architecture** — Designed a modular, dependency-injected backend with clear separation of controllers, services, and repositories
-- **Real-time systems** — Implemented a scalable Socket.io gateway with a Redis adapter to support horizontal scaling and cross-instance event broadcasting
-- **Authentication & security** — Built a complete JWT + refresh token rotation flow with Passport.js, bcrypt, and rate limiting
-- **Background processing** — Offloaded email delivery and notification fan-out to BullMQ workers, keeping API responses fast
-- **MongoDB data modelling** — Designed multi-tenant schemas with Mongoose, including RBAC embedded in workspace membership documents
-- **State management at scale** — Combined TanStack Query for server state with Zustand for UI state, minimising unnecessary re-renders
-- **Monorepo tooling** — Managed a multi-package monorepo with npm workspaces and shared TypeScript types across frontend and backend
-- **DevOps fundamentals** — Containerised all services with Docker Compose and configured a GitHub Actions CI pipeline
+**Frontend (`apps/web/.env`):** `VITE_API_URL`, `VITE_WS_URL`.
+
+See `apps/api/.env.example` for full list and comments.
 
 ---
 
-## 🔭 Future Improvements
+## Future Improvements
 
-- **Video & voice calls** — Integrate WebRTC for in-channel video conferencing
-- **Rich text editor** — Replace plain-text notes with a ProseMirror / TipTap WYSIWYG editor with real-time collaborative cursors (CRDT)
-- **End-to-end encryption** — Add client-side encryption for DMs to improve privacy
-- **Mobile application** — Build a React Native companion app sharing the same `@teamhub/shared` type package
-- **Observability** — Add structured logging with Winston/Pino, distributed tracing with OpenTelemetry, and a Grafana dashboard
-- **Kubernetes deployment** — Migrate from docker-compose to a Helm chart for production-grade orchestration
-- **Plugin / integration system** — Expose a public webhook API so teams can connect third-party tools (GitHub, Jira, etc.)
-
----
-
-## 👤 Author
-
-**Shifao Osman**
-*MERN Stack / Full-Stack Engineer*
-
-[![GitHub](https://img.shields.io/badge/GitHub-shifaosman-181717?logo=github)](https://github.com/shifaosman)
+- **Video/voice** — WebRTC in-channel calls
+- **Rich text & collaboration** — ProseMirror/TipTap with CRDT for real-time cursors
+- **E2E encryption** — Client-side encryption for DMs
+- **Mobile** — React Native app reusing `@teamhub/shared`
+- **Observability** — Structured logging (e.g. Pino), OpenTelemetry, dashboards
+- **Kubernetes** — Helm charts for production deployment
+- **Integrations** — Webhooks and plugins (e.g. GitHub, Jira)
 
 ---
 
-*Built with ❤️ to demonstrate full-stack engineering capabilities across the entire modern web development lifecycle.*
+## License
 
+MIT (or specify your chosen license).
+
+---
+
+## Progress
+
+**DONE FEATURES**
+- Feature 1 — Real-time collaborative notes
+- Feature 2 — Workspace activity timeline
+- Feature 3 — Workspace analytics dashboard
+- Feature 4 — Smart command palette
+- Feature 5 — File collaboration system
+- Tests — Frontend (Vitest + RTL): login, command palette; Backend e2e: auth, notes, analytics, files
+
+**PENDING MAIN FEATURES**
+- none
+
+**PENDING SECONDARY FEATURES**
+- Notification center
+- Presence / typing UI polish
+- Framer Motion polish
+- Redis caching / rate limiting / request tracing
+- Profile / avatar upload / workspace settings / billing
+
+---
+
+## Author
+
+**Shifao Osman** — [GitHub](https://github.com/shifaosman)

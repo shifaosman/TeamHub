@@ -1,317 +1,567 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalSearch } from '@/hooks/useSearch';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
-import { format } from 'date-fns';
-import { X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import {
+  Search,
+  X,
+  LayoutDashboard,
+  Activity,
+  BarChart3,
+  StickyNote,
+  FolderKanban,
+  FolderOpen,
+  MessageSquare,
+  FileText,
+  CheckSquare,
+  Hash,
+  User,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  parseCommand,
+  getRecentActions,
+  addRecentAction,
+  type RecentEntry,
+} from '@/lib/commandPalette';
+import type { SearchResult } from '@/hooks/useSearch';
 
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+type FlatItem =
+  | { kind: 'page'; id: string; label: string; path: string; icon: React.ReactNode }
+  | { kind: 'command'; id: string; label: string; subtitle?: string; action: string; searchQuery?: string; icon: React.ReactNode }
+  | { kind: 'recent'; id: string; entry: RecentEntry; icon: React.ReactNode }
+  | { kind: 'channel'; id: string; label: string; channelId: string; icon: React.ReactNode }
+  | { kind: 'project'; id: string; label: string; projectId: string; icon: React.ReactNode }
+  | { kind: 'note'; id: string; label: string; noteId: string; icon: React.ReactNode }
+  | { kind: 'task'; id: string; label: string; taskId: string; projectId: string; icon: React.ReactNode }
+  | { kind: 'message'; id: string; label: string; channelId: string; icon: React.ReactNode }
+  | { kind: 'file'; id: string; label: string; fileId: string; icon: React.ReactNode }
+  | { kind: 'user'; id: string; label: string; userId: string; icon: React.ReactNode };
+
+function buildFlatList(
+  workspaceId: string,
+  query: string,
+  searchResults: SearchResult | undefined,
+  recent: RecentEntry[]
+): FlatItem[] {
+  const parsed = parseCommand(query);
+  const items: FlatItem[] = [];
+
+  const empty = !query.trim();
+
+  if (empty) {
+    // Recent
+    recent.slice(0, 4).forEach((entry) => {
+      items.push({
+        kind: 'recent',
+        id: `recent-${entry.id}-${entry.timestamp}`,
+        entry,
+        icon: <Activity className="h-4 w-4" />,
+      });
+    });
+    // Pages
+    items.push({
+      kind: 'page',
+      id: 'page-dashboard',
+      label: 'Dashboard',
+      path: '/dashboard',
+      icon: <LayoutDashboard className="h-4 w-4" />,
+    });
+    items.push({
+      kind: 'page',
+      id: 'page-activity',
+      label: 'Activity',
+      path: `/workspaces/${workspaceId}/activity`,
+      icon: <Activity className="h-4 w-4" />,
+    });
+    items.push({
+      kind: 'page',
+      id: 'page-analytics',
+      label: 'Analytics',
+      path: `/workspaces/${workspaceId}/analytics`,
+      icon: <BarChart3 className="h-4 w-4" />,
+    });
+    items.push({
+      kind: 'page',
+      id: 'page-notes',
+      label: 'Notes',
+      path: `/workspaces/${workspaceId}/notes`,
+      icon: <StickyNote className="h-4 w-4" />,
+    });
+    items.push({
+      kind: 'page',
+      id: 'page-files',
+      label: 'Files',
+      path: `/workspaces/${workspaceId}/files`,
+      icon: <FolderOpen className="h-4 w-4" />,
+    });
+    items.push({
+      kind: 'page',
+      id: 'page-projects',
+      label: 'Projects',
+      path: '/projects',
+      icon: <FolderKanban className="h-4 w-4" />,
+    });
+    // Suggested commands
+    items.push({
+      kind: 'command',
+      id: 'cmd-create-note',
+      label: 'Create note',
+      subtitle: 'Start a new note',
+      action: 'create-note',
+      icon: <StickyNote className="h-4 w-4" />,
+    });
+    items.push({
+      kind: 'command',
+      id: 'cmd-create-task',
+      label: 'Create task',
+      subtitle: 'Add a task to a project',
+      action: 'create-task',
+      icon: <CheckSquare className="h-4 w-4" />,
+    });
+  } else {
+    // Action suggestion when parsed is action
+    if (parsed.kind === 'action' && parsed.action) {
+      if (parsed.action === 'go-analytics') {
+        items.push({
+          kind: 'page',
+          id: 'page-analytics',
+          label: 'Open Analytics',
+          path: `/workspaces/${workspaceId}/analytics`,
+          icon: <BarChart3 className="h-4 w-4" />,
+        });
+      } else if (parsed.action === 'go-activity') {
+        items.push({
+          kind: 'page',
+          id: 'page-activity',
+          label: 'Open Activity',
+          path: `/workspaces/${workspaceId}/activity`,
+          icon: <Activity className="h-4 w-4" />,
+        });
+      } else if (parsed.action === 'go-dashboard') {
+        items.push({
+          kind: 'page',
+          id: 'page-dashboard',
+          label: 'Go to Dashboard',
+          path: '/dashboard',
+          icon: <LayoutDashboard className="h-4 w-4" />,
+        });
+      } else if (parsed.action === 'create-note' && parsed.searchQuery) {
+        items.push({
+          kind: 'command',
+          id: 'cmd-create-note',
+          label: `Create note "${parsed.searchQuery.slice(0, 40)}${parsed.searchQuery.length > 40 ? '…' : ''}"`,
+          action: 'create-note',
+          searchQuery: parsed.searchQuery,
+          icon: <StickyNote className="h-4 w-4" />,
+        });
+      } else if (parsed.action === 'create-task' && parsed.searchQuery) {
+        items.push({
+          kind: 'command',
+          id: 'cmd-create-task',
+          label: `Create task "${parsed.searchQuery.slice(0, 40)}${parsed.searchQuery.length > 40 ? '…' : ''}"`,
+          action: 'create-task',
+          searchQuery: parsed.searchQuery,
+          icon: <CheckSquare className="h-4 w-4" />,
+        });
+      }
+    }
+
+    // Search results (use searchQuery for API, show all groups)
+    const q = parsed.searchQuery || query.trim();
+    if (searchResults && q.length > 0) {
+      const projects = searchResults.projects ?? [];
+      const channels = searchResults.channels ?? [];
+      const notes = searchResults.notes ?? [];
+      const tasks = searchResults.tasks ?? [];
+      const messages = searchResults.messages ?? [];
+      const files = searchResults.files ?? [];
+      const users = searchResults.users ?? [];
+
+      const filter = parsed.searchKey;
+      if (!filter || filter === 'projects') {
+        projects.forEach((p) => {
+          items.push({
+            kind: 'project',
+            id: `project-${p._id}`,
+            label: p.name,
+            projectId: p._id,
+            icon: <FolderKanban className="h-4 w-4" />,
+          });
+        });
+      }
+      if (!filter || filter === 'channels') {
+        channels.forEach((c) => {
+          items.push({
+            kind: 'channel',
+            id: `channel-${c._id}`,
+            label: c.name,
+            channelId: c._id,
+            icon: <Hash className="h-4 w-4" />,
+          });
+        });
+      }
+      if (!filter || filter === 'notes') {
+        notes.forEach((n) => {
+          items.push({
+            kind: 'note',
+            id: `note-${n._id}`,
+            label: n.title,
+            noteId: n._id,
+            icon: <StickyNote className="h-4 w-4" />,
+          });
+        });
+      }
+      if (!filter || filter === 'tasks') {
+        tasks.forEach((t) => {
+          items.push({
+            kind: 'task',
+            id: `task-${t._id}`,
+            label: t.title,
+            taskId: t._id,
+            projectId: t.projectId,
+            icon: <CheckSquare className="h-4 w-4" />,
+          });
+        });
+      }
+      if (!filter || filter === 'messages') {
+        messages.forEach((m) => {
+          items.push({
+            kind: 'message',
+            id: `message-${m._id}`,
+            label: m.content?.slice(0, 50) || 'Message',
+            channelId: m.channelId,
+            icon: <MessageSquare className="h-4 w-4" />,
+          });
+        });
+      }
+      if (!filter || filter === 'files') {
+        files.forEach((f) => {
+          items.push({
+            kind: 'file',
+            id: `file-${f._id}`,
+            label: f.originalName,
+            fileId: f._id,
+            icon: <FileText className="h-4 w-4" />,
+          });
+        });
+      }
+      if (!filter) {
+        users.forEach((u) => {
+          items.push({
+            kind: 'user',
+            id: `user-${u._id}`,
+            label: u.username,
+            userId: u._id,
+            icon: <User className="h-4 w-4" />,
+          });
+        });
+      }
+    }
+  }
+
+  return items;
+}
+
 export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [recent, setRecent] = useState<RecentEntry[]>([]);
   const navigate = useNavigate();
   const { currentWorkspace } = useWorkspaceStore();
   const inputRef = useRef<HTMLInputElement>(null);
-  const resultsRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { data: searchResults, isLoading } = useGlobalSearch(
-    currentWorkspace?._id || '',
-    query,
-    20
-  );
+  const workspaceId = currentWorkspace?._id ?? '';
+  const searchQuery = query.trim() ? (parseCommand(query).searchQuery || query.trim()) : '';
+  const { data: searchResults, isLoading } = useGlobalSearch(workspaceId, searchQuery, 25);
+
+  const flatItems = buildFlatList(workspaceId, query, searchResults, recent);
 
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
-      setQuery(''); // Reset query when opening
+    setRecent(getRecentActions());
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      inputRef.current?.focus();
+      setQuery('');
+      setSelectedIndex(0);
     }
   }, [isOpen]);
 
-  // Click outside to close
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         onClose();
       }
     };
-
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [isOpen, onClose]);
 
+  const execute = useCallback(
+    (item: FlatItem) => {
+      if (item.kind === 'page') {
+        addRecentAction({ id: item.id, type: 'page', label: item.label, path: item.path });
+        navigate(item.path);
+        onClose();
+        return;
+      }
+      if (item.kind === 'recent') {
+        if (item.entry.path) {
+          navigate(item.entry.path);
+          onClose();
+        }
+        return;
+      }
+      if (item.kind === 'channel') {
+        addRecentAction({
+          id: item.id,
+          type: 'channel',
+          label: item.label,
+          path: `/channels/${item.channelId}`,
+        });
+        navigate(`/channels/${item.channelId}`);
+        onClose();
+        return;
+      }
+      if (item.kind === 'project') {
+        addRecentAction({
+          id: item.id,
+          type: 'project',
+          label: item.label,
+          path: `/projects/${item.projectId}`,
+        });
+        navigate(`/projects/${item.projectId}`);
+        onClose();
+        return;
+      }
+      if (item.kind === 'note') {
+        addRecentAction({
+          id: item.id,
+          type: 'note',
+          label: item.label,
+          path: `/notes/${item.noteId}`,
+        });
+        navigate(`/notes/${item.noteId}`);
+        onClose();
+        return;
+      }
+      if (item.kind === 'task') {
+        addRecentAction({
+          id: item.id,
+          type: 'task',
+          label: item.label,
+          path: `/projects/${item.projectId}?taskId=${item.taskId}`,
+        });
+        navigate(`/projects/${item.projectId}?taskId=${item.taskId}`);
+        onClose();
+        return;
+      }
+      if (item.kind === 'message') {
+        navigate(`/channels/${item.channelId}`);
+        onClose();
+        return;
+      }
+      if (item.kind === 'file') {
+        onClose();
+        return;
+      }
+      if (item.kind === 'user') {
+        onClose();
+        return;
+      }
+      if (item.kind === 'command') {
+        if (item.action === 'create-note') {
+          addRecentAction({
+            id: item.id,
+            type: 'command',
+            label: item.label,
+            action: item.action,
+          });
+          const path = workspaceId
+            ? `/workspaces/${workspaceId}/notes/new`
+            : '/dashboard';
+          navigate(path, { state: item.searchQuery ? { title: item.searchQuery } : undefined });
+          onClose();
+          return;
+        }
+        if (item.action === 'create-task') {
+          addRecentAction({
+            id: item.id,
+            type: 'command',
+            label: item.label,
+            action: item.action,
+          });
+          navigate('/projects', { state: item.searchQuery ? { newTaskTitle: item.searchQuery } : undefined });
+          onClose();
+          return;
+        }
+      }
+    },
+    [navigate, onClose, workspaceId]
+  );
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
-
       if (e.key === 'Escape') {
         onClose();
-      } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setSelectedIndex((prev) => {
-          const maxIndex = getTotalResults() - 1;
-          return prev < maxIndex ? prev + 1 : prev;
-        });
-      } else if (e.key === 'ArrowUp') {
+        return;
+      }
+      if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
-      } else if (e.key === 'Enter') {
+        setSelectedIndex((i) => (i < flatItems.length - 1 ? i + 1 : i));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
         e.preventDefault();
-        handleSelect(selectedIndex);
+        setSelectedIndex((i) => (i > 0 ? i - 1 : 0));
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const item = flatItems[selectedIndex];
+        if (item) execute(item);
+        return;
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, selectedIndex, searchResults]);
+  }, [isOpen, selectedIndex, flatItems, execute, onClose]);
 
   useEffect(() => {
     setSelectedIndex(0);
-  }, [query]);
+  }, [query, searchResults]);
 
   useEffect(() => {
-    if (resultsRef.current && selectedIndex >= 0) {
-      const selectedElement = resultsRef.current.children[selectedIndex] as HTMLElement;
-      if (selectedElement) {
-        selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      }
-    }
+    const el = listRef.current;
+    if (!el) return;
+    const child = el.children[selectedIndex] as HTMLElement;
+    if (child) child.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [selectedIndex]);
-
-  const getTotalResults = (): number => {
-    if (!searchResults) return 0;
-    return (
-      (searchResults.messages?.length || 0) +
-      (searchResults.channels?.length || 0) +
-      (searchResults.users?.length || 0)
-    );
-  };
-
-  const handleSelect = (index: number) => {
-    if (!searchResults) return;
-
-    let currentIndex = 0;
-
-    // Check messages
-    if (searchResults.messages && searchResults.messages.length > 0) {
-      if (index < searchResults.messages.length) {
-        const message = searchResults.messages[index];
-        navigate(`/channels/${message.channelId}`);
-        onClose();
-        return;
-      }
-      currentIndex += searchResults.messages.length;
-    }
-
-    // Check channels
-    if (searchResults.channels && searchResults.channels.length > 0) {
-      if (index < currentIndex + searchResults.channels.length) {
-        const channel = searchResults.channels[index - currentIndex];
-        navigate(`/channels/${channel._id}`);
-        onClose();
-        return;
-      }
-      currentIndex += searchResults.channels.length;
-    }
-
-    // Check users
-    if (searchResults.users && searchResults.users.length > 0) {
-      if (index < currentIndex + searchResults.users.length) {
-        // Navigate to user profile or DM (if implemented)
-        onClose();
-        return;
-      }
-    }
-  };
 
   if (!isOpen) return null;
 
-  const totalResults = getTotalResults();
+  const isMac = typeof navigator !== 'undefined' && /mac|darwin/i.test(navigator.platform);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black bg-opacity-50">
-      <div ref={containerRef} className="w-full max-w-2xl bg-card text-card-foreground rounded-lg shadow-xl border border-border">
-        <div className="p-4 border-b border-border flex items-center gap-2">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 pt-[12vh] backdrop-blur-md animate-in fade-in duration-150">
+      <div
+        ref={containerRef}
+        className="w-full max-w-2xl overflow-hidden rounded-2xl border border-border bg-card/95 shadow-2xl animate-in zoom-in-95 slide-in-from-top-4 duration-200"
+      >
+        <div className="flex items-center gap-3 border-b border-border/80 px-4 py-3">
+          <Search className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search messages, channels, users..."
-            className="flex-1 px-4 py-2 text-lg border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+            placeholder="Search or run a command…"
+            className="flex-1 bg-transparent py-2 text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
+            aria-label="Command palette search"
           />
-          <Button
-            variant="ghost"
-            size="sm"
+          <kbd className="hidden rounded-md border border-border bg-muted/80 px-2 py-1 text-xs text-muted-foreground sm:inline-block">
+            Esc
+          </kbd>
+          <button
+            type="button"
             onClick={onClose}
-            className="flex-shrink-0"
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
             aria-label="Close"
           >
-            <X className="h-5 w-5" />
-          </Button>
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
-        <div ref={resultsRef} className="max-h-96 overflow-y-auto">
-          {isLoading ? (
-            <div className="p-4 text-center text-muted-foreground">Searching...</div>
-          ) : !query || query.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground">
-              <p className="mb-2">Start typing to search</p>
-              <p className="text-sm">Search for messages, channels, or users</p>
+        <div ref={listRef} className="max-h-[min(60vh,400px)] overflow-y-auto py-2">
+          {!workspaceId && query.trim() ? (
+            <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+              Select a workspace to search.
             </div>
-          ) : totalResults === 0 ? (
-            <div className="p-4 text-center text-muted-foreground">
-              <p>No results found for "{query}"</p>
+          ) : isLoading && searchQuery ? (
+            <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              Searching…
+            </div>
+          ) : flatItems.length === 0 ? (
+            <div className="px-4 py-8 text-center">
+              <p className="text-sm font-medium text-foreground">No results</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Try: <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5">task Fix bug</kbd>
+                {' · '}
+                <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5">note Meeting</kbd>
+                {' · '}
+                <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5">analytics</kbd>
+              </p>
             </div>
           ) : (
-            <>
-              {/* Messages */}
-              {searchResults?.messages && searchResults.messages.length > 0 && (
-                <div>
-                  <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase bg-muted">
-                    Messages ({searchResults.messages.length})
-                  </div>
-                  {searchResults.messages.map((message, idx) => {
-                    const globalIndex = idx;
-                    return (
-                      <button
-                        key={message._id}
-                        onClick={() => handleSelect(globalIndex)}
-                        className={`w-full text-left px-4 py-3 hover:bg-muted transition-colors ${
-                          selectedIndex === globalIndex ? 'bg-primary/10 border-l-4 border-primary' : ''
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                            {message.user?.avatar ? (
-                              <img
-                                src={message.user.avatar}
-                                alt={message.user.username}
-                                className="w-full h-full rounded-full"
-                              />
-                            ) : (
-                              <span className="text-xs font-medium text-muted-foreground">
-                                {message.user?.username?.[0]?.toUpperCase() || 'U'}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-foreground">
-                                {message.user?.username || 'Unknown'}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {format(new Date(message.createdAt), 'MMM d, h:mm a')}
-                              </span>
-                            </div>
-                            <p className="text-sm text-foreground/80 mt-1 line-clamp-2">
-                              {message.content}
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Channels */}
-              {searchResults?.channels && searchResults.channels.length > 0 && (
-                <div>
-                  <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase bg-muted">
-                    Channels ({searchResults.channels.length})
-                  </div>
-                  {searchResults.channels.map((channel, idx) => {
-                    const globalIndex =
-                      (searchResults.messages?.length || 0) + idx;
-                    return (
-                      <button
-                        key={channel._id}
-                        onClick={() => handleSelect(globalIndex)}
-                        className={`w-full text-left px-4 py-3 hover:bg-muted transition-colors ${
-                          selectedIndex === globalIndex
-                            ? 'bg-primary/10 border-l-4 border-primary'
-                            : ''
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="text-xl">#</div>
-                          <div>
-                            <div className="font-semibold text-foreground">{channel.name}</div>
-                            {channel.description && (
-                              <div className="text-sm text-muted-foreground mt-1">{channel.description}</div>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Users */}
-              {searchResults?.users && searchResults.users.length > 0 && (
-                <div>
-                  <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase bg-muted">
-                    Users ({searchResults.users.length})
-                  </div>
-                  {searchResults.users.map((user, idx) => {
-                    const globalIndex =
-                      (searchResults.messages?.length || 0) +
-                      (searchResults.channels?.length || 0) +
-                      idx;
-                    return (
-                      <button
-                        key={user._id}
-                        onClick={() => handleSelect(globalIndex)}
-                        className={`w-full text-left px-4 py-3 hover:bg-muted transition-colors ${
-                          selectedIndex === globalIndex
-                            ? 'bg-primary/10 border-l-4 border-primary'
-                            : ''
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                            {user.avatar ? (
-                              <img
-                                src={user.avatar}
-                                alt={user.username}
-                                className="w-full h-full rounded-full"
-                              />
-                            ) : (
-                              <span className="text-sm font-medium text-muted-foreground">
-                                {user.username?.[0]?.toUpperCase() || 'U'}
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-semibold text-foreground">{user.username}</div>
-                            <div className="text-sm text-muted-foreground">{user.email}</div>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </>
+            <ul className="space-y-0.5" role="listbox">
+              {flatItems.map((item, index) => {
+                const isSelected = index === selectedIndex;
+                const label =
+                  item.kind === 'recent' ? item.entry.label : item.label;
+                const subtitle =
+                  item.kind === 'recent'
+                    ? item.entry.path
+                    : 'subtitle' in item
+                      ? item.subtitle
+                      : undefined;
+                return (
+                  <li key={item.id} role="option" aria-selected={isSelected}>
+                    <button
+                      type="button"
+                      onClick={() => execute(item)}
+                      onMouseEnter={() => setSelectedIndex(index)}
+                      className={cn(
+                        'flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors',
+                        isSelected
+                          ? 'bg-primary/10 text-foreground'
+                          : 'text-foreground hover:bg-muted/60'
+                      )}
+                    >
+                      <span className={cn(
+                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                        isSelected ? 'text-primary' : 'text-muted-foreground'
+                      )}>
+                        {item.icon}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium">{label}</div>
+                        {subtitle && (
+                          <div className="truncate text-xs text-muted-foreground">{subtitle}</div>
+                        )}
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
 
-        <div className="px-4 py-2 border-t border-border text-xs text-muted-foreground">
-          <div className="flex items-center justify-between">
-            <span>
-              {totalResults > 0 ? `${totalResults} result${totalResults !== 1 ? 's' : ''}` : 'No results'}
-            </span>
-            <span>↑↓ Navigate • Enter Select • Click outside or X to close</span>
-          </div>
+        <div className="flex items-center justify-between border-t border-border/80 px-4 py-2 text-xs text-muted-foreground">
+          <span>
+            {flatItems.length > 0 ? `${flatItems.length} result${flatItems.length !== 1 ? 's' : ''}` : 'Commands: task, note, project, channel, analytics'}
+          </span>
+          <span className="flex items-center gap-4">
+            <span>↑↓ Navigate</span>
+            <span>↵ Select</span>
+            <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5">
+              {isMac ? '⌘' : 'Ctrl+'}K
+            </kbd>
+          </span>
         </div>
       </div>
     </div>

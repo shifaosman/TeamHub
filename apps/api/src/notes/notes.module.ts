@@ -7,6 +7,7 @@ import { NoteVersion, NoteVersionSchema } from './schemas/note-version.schema';
 import { NoteComment, NoteCommentSchema } from './schemas/note-comment.schema';
 import { NoteCollaborator, NoteCollaboratorSchema } from './schemas/note-collaborator.schema';
 import { WorkspacesModule } from '../workspaces/workspaces.module';
+import { ActivityModule } from '../activity/activity.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { WorkspacesModule } from '../workspaces/workspaces.module';
       { name: NoteCollaborator.name, schema: NoteCollaboratorSchema },
     ]),
     WorkspacesModule,
+    ActivityModule,
   ],
   providers: [NotesService],
   controllers: [NotesController],

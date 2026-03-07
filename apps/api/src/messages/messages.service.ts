@@ -18,6 +18,7 @@ import { AddReactionDto } from './dto/add-reaction.dto';
 import { SearchMessagesDto } from './dto/search-messages.dto';
 import { ChannelsService } from '../channels/channels.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ActivityService } from '../activity/activity.service';
 import { NotificationType } from '@teamhub/shared';
 // @ts-ignore - sanitize-html doesn't have types
 import sanitizeHtml from 'sanitize-html';
@@ -30,6 +31,7 @@ export class MessagesService {
     private messageEditHistoryModel: Model<MessageEditHistoryDocument>,
     @InjectModel(Bookmark.name) private bookmarkModel: Model<BookmarkDocument>,
     private channelsService: ChannelsService,
+    private activityService: ActivityService,
     @Optional() @Inject(forwardRef(() => NotificationsService))
     private notificationsService?: NotificationsService
   ) {}
@@ -53,8 +55,9 @@ export class MessagesService {
         })
       : '';
 
-    // Extract mentions from content
-    const mentions = sanitizedContent ? this.extractMentions(sanitizedContent) : [];
+    // Extract @username mentions and resolve to user IDs for notifications
+    const mentionUsernames = sanitizedContent ? this.extractMentions(sanitizedContent) : [];
+    const mentions = await this.resolveMentionUsernamesToIds(createMessageDto.channelId, mentionUsernames);
 
     // If replying to a message, verify it exists
     if (createMessageDto.replyToId) {
@@ -79,6 +82,19 @@ export class MessagesService {
     });
 
     const savedMessage = await message.save();
+
+    await this.activityService.record({
+      workspaceId: channel.workspaceId,
+      actorId: userId,
+      type: 'MESSAGE_POSTED',
+      entityType: 'message',
+      entityId: savedMessage._id.toString(),
+      metadata: {
+        channelId: channel._id.toString(),
+        channelName: channel.name,
+        contentPreview: (sanitizedContent || '').substring(0, 100),
+      },
+    });
 
     // Update last read for sender
     await this.channelsService.updateLastRead(createMessageDto.channelId, userId);
@@ -425,11 +441,30 @@ export class MessagesService {
     const mentionRegex = /@(\w+)/g;
     const mentions: string[] = [];
     let match;
-
     while ((match = mentionRegex.exec(content)) !== null) {
       mentions.push(match[1]);
     }
+    return [...new Set(mentions)];
+  }
 
-    return [...new Set(mentions)]; // Remove duplicates
+  /** Resolve @username mentions to user IDs for notification targeting; returns array of userIds */
+  private async resolveMentionUsernamesToIds(channelId: string, usernames: string[]): Promise<string[]> {
+    if (usernames.length === 0) return [];
+    const members = await this.channelsService.getChannelMembers(channelId);
+    const ids: string[] = [];
+    for (const username of usernames) {
+      const lower = username.toLowerCase();
+      const member = members.find((m: any) => {
+        const u = m.userId;
+        if (!u || typeof u !== 'object') return false;
+        return (u.username || '').toLowerCase() === lower;
+      });
+      if (member) {
+        const u = (member as { userId?: { _id?: unknown } | string }).userId;
+        const id = typeof u === 'object' && u && '_id' in u ? String((u as { _id: unknown })._id) : typeof u === 'string' ? u : '';
+        if (id) ids.push(id);
+      }
+    }
+    return [...new Set(ids)];
   }
 }

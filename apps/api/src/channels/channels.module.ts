@@ -5,6 +5,7 @@ import { ChannelsController } from './channels.controller';
 import { Channel, ChannelSchema } from './schemas/channel.schema';
 import { ChannelMember, ChannelMemberSchema } from './schemas/channel-member.schema';
 import { WorkspacesModule } from '../workspaces/workspaces.module';
+import { ActivityModule } from '../activity/activity.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { WorkspacesModule } from '../workspaces/workspaces.module';
       { name: ChannelMember.name, schema: ChannelMemberSchema },
     ]),
     WorkspacesModule,
+    ActivityModule,
   ],
   providers: [ChannelsService],
   controllers: [ChannelsController],

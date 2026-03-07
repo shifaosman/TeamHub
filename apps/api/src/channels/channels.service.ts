@@ -13,6 +13,7 @@ import { UpdateChannelDto } from './dto/update-channel.dto';
 import { AddChannelMembersDto } from './dto/add-members.dto';
 import { ChannelType } from '@teamhub/shared';
 import { WorkspacesService } from '../workspaces/workspaces.service';
+import { ActivityService } from '../activity/activity.service';
 import { UserRole } from '@teamhub/shared';
 
 @Injectable()
@@ -21,7 +22,8 @@ export class ChannelsService {
     @InjectModel(Channel.name) private channelModel: Model<ChannelDocument>,
     @InjectModel(ChannelMember.name)
     private channelMemberModel: Model<ChannelMemberDocument>,
-    private workspacesService: WorkspacesService
+    private workspacesService: WorkspacesService,
+    private activityService: ActivityService
   ) {}
 
   async create(userId: string, createChannelDto: CreateChannelDto): Promise<ChannelDocument> {
@@ -93,6 +95,15 @@ export class ChannelsService {
         await this.channelMemberModel.insertMany(membersToAdd);
       }
     }
+
+    await this.activityService.record({
+      workspaceId: savedChannel.workspaceId,
+      actorId: userId,
+      type: 'CHANNEL_CREATED',
+      entityType: 'channel',
+      entityId: savedChannel._id.toString(),
+      metadata: { name: savedChannel.name, slug: savedChannel.slug },
+    });
 
     return savedChannel;
   }

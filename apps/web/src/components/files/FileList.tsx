@@ -8,7 +8,7 @@ interface FileListProps {
 }
 
 export function FileList({ workspaceId, channelId }: FileListProps) {
-  const { data, isLoading } = useFiles(workspaceId, channelId);
+  const { data, isLoading } = useFiles(workspaceId, { channelId });
 
   if (isLoading) {
     return <div className="text-sm text-muted-foreground p-4">Loading files...</div>;
@@ -63,7 +63,7 @@ export function FileList({ workspaceId, channelId }: FileListProps) {
                 <span>{formatFileSize(file.size)}</span>
                 <span>•</span>
                 <span>
-                  {file.user?.username || 'Unknown'} •{' '}
+                  {file.uploader?.username ?? file.user?.username ?? 'Unknown'} •{' '}
                   {formatDistanceToNow(new Date(file.createdAt), { addSuffix: true })}
                 </span>
               </div>

@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useCreateMessage } from '@/hooks/useMessages';
 import { useSocket } from '@/hooks/useSocket';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
+import { useWorkspaceMembers } from '@/hooks/useWorkspaces';
 import { Button } from '@/components/ui/button';
 import { FileUpload } from '@/components/files/FileUpload';
 import { FilePreview } from '@/components/files/FilePreview';
@@ -17,38 +18,78 @@ interface MessageInputProps {
 export function MessageInput({ channelId, threadId, replyToId }: MessageInputProps) {
   const [content, setContent] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<FileUploadType[]>([]);
+  const [mentionStart, setMentionStart] = useState<number | null>(null);
+  const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const createMessage = useCreateMessage();
   const socket = useSocket();
   const { currentWorkspace } = useWorkspaceStore();
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const { data: membersData } = useWorkspaceMembers(currentWorkspace?._id || '');
+  const members = useMemo(() => {
+    const list = membersData as Array<{ userId: { _id: string; username: string } }> | undefined;
+    if (!list) return [];
+    return list
+      .map((m: any) => (typeof m.userId === 'object' && m.userId?.username ? { id: m.userId._id, username: m.userId.username } : null))
+      .filter(Boolean) as { id: string; username: string }[];
+  }, [membersData]);
+
+  const mentionQuery = mentionStart != null ? (content.slice(mentionStart + 1).split(/\s/)[0] ?? '') : '';
+  const filteredMembers = useMemo(() => {
+    if (!mentionQuery) return members.slice(0, 8);
+    const q = mentionQuery.toLowerCase();
+    return members.filter((m) => m.username.toLowerCase().startsWith(q)).slice(0, 8);
+  }, [members, mentionQuery]);
+
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
   }, [content]);
 
-  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value);
+  useEffect(() => {
+    setSelectedMentionIndex(0);
+  }, [filteredMembers.length]);
 
-    // Send typing indicator
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const v = e.target.value;
+    const pos = e.target.selectionStart ?? v.length;
+    setContent(v);
+    const textBeforeCaret = v.slice(0, pos);
+    const lastAt = textBeforeCaret.lastIndexOf('@');
+    if (lastAt !== -1) {
+      const afterAt = textBeforeCaret.slice(lastAt + 1);
+      if (!/\s/.test(afterAt)) {
+        setMentionStart(lastAt);
+        if (socket) {
+          socket.emit('message:typing', { channelId, threadId });
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => socket?.emit('message:typing', { channelId, threadId, isTyping: false }), 3000);
+        }
+        return;
+      }
+    }
+    setMentionStart(null);
     if (socket) {
       socket.emit('message:typing', { channelId, threadId });
-
-      // Clear previous timeout
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-
-      // Stop typing after 3 seconds of inactivity
-      typingTimeoutRef.current = setTimeout(() => {
-        if (socket) {
-          socket.emit('message:typing', { channelId, threadId, isTyping: false });
-        }
-      }, 3000);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => socket?.emit('message:typing', { channelId, threadId, isTyping: false }), 3000);
     }
+  };
+
+  const insertMention = (username: string) => {
+    if (mentionStart == null || !textareaRef.current) return;
+    const before = content.slice(0, mentionStart);
+    const after = content.slice(mentionStart + 1 + mentionQuery.length);
+    setContent(`${before}@${username} ${after}`);
+    setMentionStart(null);
+    setTimeout(() => {
+      textareaRef.current?.focus();
+      const pos = before.length + username.length + 2;
+      textareaRef.current?.setSelectionRange(pos, pos);
+    }, 0);
   };
 
   const handleFileUpload = async (file: FileUploadType) => {
@@ -82,6 +123,24 @@ export function MessageInput({ channelId, threadId, replyToId }: MessageInputPro
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mentionStart != null && filteredMembers.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedMentionIndex((i) => (i + 1) % filteredMembers.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedMentionIndex((i) => (i - 1 + filteredMembers.length) % filteredMembers.length);
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        insertMention(filteredMembers[selectedMentionIndex].username);
+        return;
+      }
+      if (e.key === 'Escape') setMentionStart(null);
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
@@ -118,15 +177,29 @@ export function MessageInput({ channelId, threadId, replyToId }: MessageInputPro
           </div>
         </div>
       )}
-      <div className="p-4 flex gap-2 items-end">
+      <div className="relative flex flex-1 items-end gap-2 p-4">
         <div className="flex-1">
+          {mentionStart != null && filteredMembers.length > 0 && (
+            <div className="absolute bottom-full left-4 right-24 z-10 mb-1 max-h-48 overflow-auto rounded-lg border border-border bg-popover py-1 shadow-lg">
+              {filteredMembers.map((m, i) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted ${i === selectedMentionIndex ? 'bg-muted' : ''}`}
+                  onClick={() => insertMention(m.username)}
+                >
+                  <span className="font-medium text-foreground">@{m.username}</span>
+                </button>
+              ))}
+            </div>
+          )}
           <textarea
             ref={textareaRef}
             value={content}
             onChange={handleInput}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            className="w-full resize-none rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="Type a message... (use @ to mention)"
+            className="min-h-[40px] w-full max-h-[200px] resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             rows={1}
           />
         </div>

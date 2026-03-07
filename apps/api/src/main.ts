@@ -10,10 +10,30 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
+function validateEnv(configService: ConfigService) {
+  const nodeEnv = configService.get('nodeEnv') || process.env.NODE_ENV || 'development';
+  const required =
+    nodeEnv === 'production'
+      ? ['MONGODB_URI', 'JWT_SECRET', 'JWT_REFRESH_SECRET']
+      : ['MONGODB_URI'];
+  const missing = required.filter((key) => {
+    const v = key === 'MONGODB_URI' ? configService.get('mongodb.uri') : process.env[key];
+    return !v;
+  });
+  if (missing.length > 0) {
+    const msg = `Missing required env: ${missing.join(', ')}. Set them in .env or environment.`;
+    if (nodeEnv === 'production') {
+      console.error(msg);
+      process.exit(1);
+    }
+    console.warn(`⚠️ ${msg}`);
+  }
+}
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-
   const configService = app.get(ConfigService);
+  validateEnv(configService);
 
   // Security
   app.use(helmet());
