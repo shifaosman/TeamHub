@@ -1,16 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import type { Notification as SharedNotification } from '@teamhub/shared';
 
-export interface Notification {
+export interface Notification extends SharedNotification {
   _id: string;
-  userId: string;
-  workspaceId: string;
-  type: string;
-  title: string;
-  body: string;
-  isRead: boolean;
-  link?: string;
-  metadata?: Record<string, unknown>;
   createdAt: string;
 }
 
@@ -69,7 +62,7 @@ export function useMarkAllAsRead() {
     mutationFn: async (workspaceId?: string) => {
       const params = new URLSearchParams();
       if (workspaceId) params.append('workspaceId', workspaceId);
-      const response = await api.post(`/notifications/read-all?${params.toString()}`);
+      const response = await api.patch(`/notifications/read-all?${params.toString()}`);
       return response.data;
     },
     onSuccess: () => {

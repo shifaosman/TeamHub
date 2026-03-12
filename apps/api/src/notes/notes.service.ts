@@ -15,6 +15,8 @@ import { UpdateNoteDto } from './dto/update-note.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { ActivityService } from '../activity/activity.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '@teamhub/shared';
 
 @Injectable()
 export class NotesService {
@@ -25,7 +27,8 @@ export class NotesService {
     @InjectModel(NoteCollaborator.name)
     private noteCollaboratorModel: Model<NoteCollaboratorDocument>,
     private workspacesService: WorkspacesService,
-    private activityService: ActivityService
+    private activityService: ActivityService,
+    private notificationsService: NotificationsService
   ) {}
 
   async create(userId: string, createNoteDto: CreateNoteDto): Promise<NoteDocument> {
@@ -185,6 +188,29 @@ export class NotesService {
         entityId: note._id.toString(),
         metadata: { title: saved.title },
       });
+      // Notify other collaborators (excluding the editor)
+      const collaborators = await this.noteCollaboratorModel
+        .find({ noteId: id })
+        .select('userId')
+        .lean()
+        .exec();
+      const userIds = collaborators
+        .map((c) => (c as { userId: unknown }).userId?.toString())
+        .filter((id) => id && id !== userId) as string[];
+      if (userIds.length > 0) {
+        const link = `/workspaces/${note.workspaceId}/notes/${id}`;
+        await this.notificationsService.createForUsers(
+          userIds,
+          note.workspaceId,
+          NotificationType.NOTE_UPDATED,
+          'Note updated',
+          `"${saved.title}" was updated`,
+          link,
+          { noteId: id },
+          'note',
+          id
+        );
+      }
     }
 
     return saved;

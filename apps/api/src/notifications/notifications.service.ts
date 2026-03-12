@@ -54,7 +54,9 @@ export class NotificationsService {
     title: string,
     body: string,
     link?: string,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
+    entityType?: string,
+    entityId?: string
   ): Promise<NotificationDocument[]> {
     const notifications = userIds.map((userId) => ({
       userId,
@@ -64,6 +66,8 @@ export class NotificationsService {
       body,
       link,
       metadata,
+      entityType,
+      entityId,
     }));
 
     const created = await this.notificationModel.insertMany(notifications);

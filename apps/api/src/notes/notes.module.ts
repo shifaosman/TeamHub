@@ -8,6 +8,7 @@ import { NoteComment, NoteCommentSchema } from './schemas/note-comment.schema';
 import { NoteCollaborator, NoteCollaboratorSchema } from './schemas/note-collaborator.schema';
 import { WorkspacesModule } from '../workspaces/workspaces.module';
 import { ActivityModule } from '../activity/activity.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ActivityModule } from '../activity/activity.module';
     ]),
     WorkspacesModule,
     ActivityModule,
+    NotificationsModule,
   ],
   providers: [NotesService],
   controllers: [NotesController],

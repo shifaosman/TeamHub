@@ -9,6 +9,7 @@ import { WorkspaceInvite, WorkspaceInviteSchema } from './schemas/workspace-invi
 import { AuditLog, AuditLogSchema } from './schemas/audit-log.schema';
 import { UsersModule } from '../users/users.module';
 import { ActivityModule } from '../activity/activity.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ActivityModule } from '../activity/activity.module';
     ]),
     UsersModule,
     forwardRef(() => ActivityModule),
+    forwardRef(() => NotificationsModule),
   ],
   providers: [WorkspacesService],
   controllers: [WorkspacesController],

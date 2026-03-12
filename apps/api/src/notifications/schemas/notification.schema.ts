@@ -31,6 +31,12 @@ export class Notification {
   @Prop()
   link?: string;
 
+  @Prop()
+  entityType?: string;
+
+  @Prop()
+  entityId?: string;
+
   @Prop({ type: Object })
   metadata?: Record<string, unknown>;
 }

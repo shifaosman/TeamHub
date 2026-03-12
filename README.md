@@ -39,11 +39,12 @@
 - **Smart command palette** — `Ctrl/Cmd + K` opens a Raycast/Linear-style command palette: **search** across channels, projects, notes, tasks, messages, and files; **quick actions** (e.g. `task Fix bug`, `note Sprint plan`, `analytics`, `activity`); **pages** (Dashboard, Activity, Analytics, Notes, Projects); **recent actions**; keyboard-first (↑↓ navigate, Enter select, Esc close). Prefix-based command parsing for create-note, create-task, go-to-page, and open-entity. Improves navigation and productivity without leaving the keyboard.
 - **Dashboard** — Workspace home with recent activity, active projects, channels, and task CTA.
 - **Notifications** — In-app and email with per-user preferences; BullMQ for async delivery.
+- **Notification Center** — Workspace notification inbox: bell icon with unread badge in the sidebar, dropdown panel with notification list (mentions, task assignments/updates, note updates, file comments, workspace invites). Each row shows type icon, title, body, optional entity name, relative timestamp, and read/unread state. Mark one or mark all as read; click to navigate to the related task, note, file, or workspace. Empty state and loading skeletons. Design follows Slack/GitHub/Linear-style clarity. Improves team awareness and answers: *What needs my attention? Where should I go next?*
 - **Workspace Activity Timeline** — Central feed of workspace events: who created or moved tasks, posted messages, uploaded files, edited notes, created channels, or joined the workspace. Filter by type (tasks, projects, notes, messages, files, channels), grouped by day (Today, Yesterday, Earlier this week), with load-more and clean timeline UI for team visibility and auditability.
 - **Workspace Analytics Dashboard** — Metrics page at `/workspaces/:workspaceId/analytics` to measure progress and collaboration: KPI cards (tasks, completed, projects, members), tasks created vs completed over time, messages over time, task status and priority distribution, project completion progress bars, most active channels and members, and collaboration snapshot (notes edited, files uploaded, messages). Date range filter (7d / 30d / 90d). Helps teams answer: Are we completing work? Which projects are moving? Who is contributing most?
 - **Audit & activity** — Activity model and API back the timeline and analytics; events are recorded automatically from projects, tasks, notes, messages, channels, files, and workspace membership.
 - **Authentication & security** — JWT access + refresh token rotation, bcrypt, rate limiting, Helmet. API validates required env in production.
-- **Automated testing** — **Frontend:** Vitest + React Testing Library; tests for login page (form render, links, submit, error display) and command palette (closed state, open with search input and page results). Run with `npm run test:web`. **Backend:** Jest unit tests (e.g. `AuthService`) and e2e/integration tests for auth (register, login, token validation), notes (create, list, update), analytics (workspace analytics endpoint), and files (upload, list). Run unit tests with `npm run test:api`; e2e with `npm run test:e2e` from `apps/api` (requires MongoDB and optionally Redis).
+- **Automated testing** — **Frontend:** Vitest + React Testing Library; tests for login page (form render, links, submit, error display) and command palette (closed state, open with search input and page results). Run with `npm run test:web`. **Backend:** Jest unit tests (e.g. `AuthService`) and e2e/integration tests for auth (register, login, token validation), notes (create, list, update), analytics (workspace analytics endpoint), files (upload, list), and notifications (list, unread count, mark all read). Run unit tests with `npm run test:api`; e2e with `npm run test:e2e` from `apps/api` (requires MongoDB and optionally Redis).
 
 ---
 
@@ -222,18 +223,15 @@ MIT (or specify your chosen license).
 ## Progress
 
 **DONE FEATURES**
-- Feature 1 — Real-time collaborative notes
-- Feature 2 — Workspace activity timeline
-- Feature 3 — Workspace analytics dashboard
-- Feature 4 — Smart command palette
-- Feature 5 — File collaboration system
-- Tests — Frontend (Vitest + RTL): login, command palette; Backend e2e: auth, notes, analytics, files
-
-**PENDING MAIN FEATURES**
-- none
-
-**PENDING SECONDARY FEATURES**
+- Real-time collaborative notes
+- Workspace activity timeline
+- Workspace analytics dashboard
+- Smart command palette
+- File collaboration system
+- Tests (frontend completed, backend e2e: auth, notes, analytics, files, notifications)
 - Notification center
+
+**PENDING FEATURES**
 - Presence / typing UI polish
 - Framer Motion polish
 - Redis caching / rate limiting / request tracing

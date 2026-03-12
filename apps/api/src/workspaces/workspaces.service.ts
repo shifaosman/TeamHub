@@ -21,6 +21,9 @@ import { InviteToWorkspaceDto } from './dto/invite-to-workspace.dto';
 import { CreateInviteLinkDto } from './dto/create-invite-link.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { UserRole } from '@teamhub/shared';
+import { UsersService } from '../users/users.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '@teamhub/shared';
 
 @Injectable()
 export class WorkspacesService {
@@ -36,7 +39,10 @@ export class WorkspacesService {
     @InjectModel(AuditLog.name)
     private auditLogModel: Model<AuditLogDocument>,
     @Inject(forwardRef(() => ActivityService))
-    private activityService: ActivityService
+    private activityService: ActivityService,
+    private usersService: UsersService,
+    @Inject(forwardRef(() => NotificationsService))
+    private notificationsService: NotificationsService
   ) {}
 
   // Organizations
@@ -301,7 +307,28 @@ export class WorkspacesService {
       metadata: { email: inviteDto.email, role: inviteDto.role },
     });
 
-    return invite.save();
+    const saved = await invite.save();
+
+    // If invited email belongs to an existing user, create in-app notification
+    const invitedUser = await this.usersService.findByEmail(inviteDto.email);
+    if (invitedUser) {
+      const workspace = await this.workspaceModel.findById(workspaceId).select('name').lean().exec();
+      const workspaceName = workspace?.name ?? 'a workspace';
+      const link = `/join?token=${saved.token}`;
+      await this.notificationsService.create({
+        userId: invitedUser._id.toString(),
+        workspaceId,
+        type: NotificationType.WORKSPACE_INVITE,
+        title: 'Workspace invite',
+        body: `You were invited to ${workspaceName}`,
+        link,
+        entityType: 'workspace',
+        entityId: workspaceId,
+        metadata: { inviteId: saved._id.toString(), role: saved.role },
+      });
+    }
+
+    return saved;
   }
 
   async createInviteLink(

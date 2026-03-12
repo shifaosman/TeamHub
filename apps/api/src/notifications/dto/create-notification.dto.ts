@@ -28,6 +28,16 @@ export class CreateNotificationDto {
   @IsString()
   declare link?: string;
 
+  @ApiProperty({ required: false, description: 'Entity type for navigation (e.g. task, note, file)' })
+  @IsOptional()
+  @IsString()
+  declare entityType?: string;
+
+  @ApiProperty({ required: false, description: 'Entity ID for navigation' })
+  @IsOptional()
+  @IsString()
+  declare entityId?: string;
+
   @ApiProperty({ required: false })
   @IsOptional()
   @IsObject()

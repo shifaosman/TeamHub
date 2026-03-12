@@ -56,6 +56,21 @@ export class NotificationsController {
     return this.notificationsService.markAsRead(id, user.userId);
   }
 
+  @Patch('read-all')
+  @ApiOperation({ summary: 'Mark all notifications as read (REST)' })
+  @ApiQuery({ name: 'workspaceId', required: false })
+  markAllAsReadPatch(@CurrentUser() user: any, @Query('workspaceId') workspaceId?: string) {
+    return this.notificationsService.markAllAsRead(user.userId, workspaceId);
+  }
+
+  @Get('unread-count')
+  @ApiOperation({ summary: 'Get unread notification count (alias)' })
+  @ApiQuery({ name: 'workspaceId', required: false })
+  async getUnreadCountAlias(@CurrentUser() user: any, @Query('workspaceId') workspaceId?: string) {
+    const count = await this.notificationsService.findUnreadCount(user.userId, workspaceId);
+    return { count };
+  }
+
   @Post('read-all')
   @ApiOperation({ summary: 'Mark all notifications as read' })
   @ApiQuery({ name: 'workspaceId', required: false })

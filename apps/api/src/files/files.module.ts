@@ -9,6 +9,7 @@ import { StorageService } from './storage/storage.service';
 import { WorkspacesModule } from '../workspaces/workspaces.module';
 import { ChannelsModule } from '../channels/channels.module';
 import { ActivityModule } from '../activity/activity.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ActivityModule } from '../activity/activity.module';
     WorkspacesModule,
     ChannelsModule,
     ActivityModule,
+    NotificationsModule,
   ],
   providers: [FilesService, StorageService],
   controllers: [FilesController],

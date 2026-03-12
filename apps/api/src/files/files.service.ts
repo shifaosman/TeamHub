@@ -13,6 +13,8 @@ import { StorageService } from './storage/storage.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { ChannelsService } from '../channels/channels.service';
 import { ActivityService } from '../activity/activity.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '@teamhub/shared';
 
 @Injectable()
 export class FilesService {
@@ -43,7 +45,8 @@ export class FilesService {
     private storageService: StorageService,
     private workspacesService: WorkspacesService,
     private channelsService: ChannelsService,
-    private activityService: ActivityService
+    private activityService: ActivityService,
+    private notificationsService: NotificationsService
   ) {}
 
   async uploadFile(
@@ -250,9 +253,28 @@ export class FilesService {
     userId: string,
     content: string
   ): Promise<FileCommentDocument> {
-    await this.findOne(fileId, userId);
+    const file = await this.findOne(fileId, userId);
     const comment = new this.fileCommentModel({ fileId, userId, content });
-    return comment.save();
+    const saved = await comment.save();
+
+    // Notify file owner if commenter is not the owner
+    const ownerId = file.uploadedBy?.toString();
+    if (ownerId && ownerId !== userId) {
+      const link = `/workspaces/${file.workspaceId}/files?fileId=${fileId}`;
+      await this.notificationsService.create({
+        userId: ownerId,
+        workspaceId: file.workspaceId,
+        type: NotificationType.FILE_COMMENT,
+        title: 'New comment on file',
+        body: content.slice(0, 80) + (content.length > 80 ? '…' : ''),
+        link,
+        entityType: 'file',
+        entityId: fileId,
+        metadata: { fileId, commentId: saved._id.toString(), originalName: file.originalName },
+      });
+    }
+
+    return saved;
   }
 
   async getComments(
