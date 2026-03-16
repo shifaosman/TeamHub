@@ -14,6 +14,7 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [presenceCount, setPresenceCount] = useState(1);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -33,12 +34,19 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
           if (data.content !== undefined) setContent(data.content);
         }
       };
+      const handlePresence = (payload: { noteId: string; count: number }) => {
+        if (payload.noteId !== noteId) return;
+        // Clamp to at least 1 so local user is always counted
+        setPresenceCount(Math.max(1, payload.count));
+      };
 
       socket.on('note:updated', handleNoteUpdate);
+      socket.on('note:presence', handlePresence);
 
       return () => {
         socket.emit('note:leave', { noteId });
         socket.off('note:updated', handleNoteUpdate);
+        socket.off('note:presence', handlePresence);
       };
     }
   }, [socket, noteId, isEditing]);
@@ -100,16 +108,21 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-border">
-        <Input
-          value={title}
-          onChange={handleTitleChange}
-          placeholder="Note title..."
-          className="text-xl font-semibold border-none focus-visible:ring-0 p-0 bg-transparent"
-        />
-        {isEditing && (
-          <p className="text-xs text-muted-foreground mt-1">Saving...</p>
-        )}
+      <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <Input
+            value={title}
+            onChange={handleTitleChange}
+            placeholder="Note title..."
+            className="text-xl font-semibold border-none focus-visible:ring-0 p-0 bg-transparent"
+          />
+          {isEditing && (
+            <p className="text-xs text-muted-foreground mt-1">Saving...</p>
+          )}
+        </div>
+        <div className="shrink-0 text-xs text-muted-foreground">
+          {presenceCount > 1 ? `${presenceCount} people here` : 'Just you here'}
+        </div>
       </div>
       <div className="flex-1 p-4 overflow-y-auto">
         <textarea

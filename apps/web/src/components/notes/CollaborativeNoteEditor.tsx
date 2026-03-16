@@ -37,7 +37,7 @@ export function CollaborativeNoteEditor({ noteId, onPresenceCount }: Collaborati
   const socket = useSocket();
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
-  const [presenceCount, setPresenceCount] = useState(0);
+  const [presenceCount, setPresenceCount] = useState(1);
   const providerRef = useRef<NoteSyncProvider | null>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialContentSetRef = useRef(false);
@@ -107,16 +107,17 @@ export function CollaborativeNoteEditor({ noteId, onPresenceCount }: Collaborati
     providerRef.current = provider;
     provider.connect();
 
-    const handlePresence = () => {
-      // Optional: track how many are in the room via a separate event; for now we don't have that
-      setPresenceCount((c) => Math.max(1, c));
+    const handlePresence = (payload: { noteId: string; count: number }) => {
+      if (payload.noteId !== noteId) return;
+      // Clamp to at least 1 so local user is always counted
+      setPresenceCount(Math.max(1, payload.count));
     };
-    socket.on('note:updated', handlePresence);
+    socket.on('note:presence', handlePresence);
 
     return () => {
       provider.disconnect();
       providerRef.current = null;
-      socket.off('note:updated', handlePresence);
+      socket.off('note:presence', handlePresence);
     };
   }, [socket, noteId, userId, ydoc]);
 

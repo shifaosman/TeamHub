@@ -32,6 +32,8 @@ export function MessageList({ channelId }: MessageListProps) {
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [threadRootId, setThreadRootId] = useState<string | null>(null);
   const [reactionPickerMessageId, setReactionPickerMessageId] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Record<string, number>>({});
+  const [threadTypingUsers, setThreadTypingUsers] = useState<Record<string, number>>({});
 
   const selectedMessage = useMemo(() => messages?.find((m) => m._id === selectedMessageId) ?? null, [messages, selectedMessageId]);
   const threadMessages = useThreadMessages(threadRootId);
@@ -53,18 +55,72 @@ export function MessageList({ channelId }: MessageListProps) {
         queryClient.invalidateQueries({ queryKey: ['notifications'] });
       };
 
+      const handleTyping = (payload: { channelId: string; threadId?: string; userId: string; isTyping: boolean }) => {
+        if (payload.channelId !== channelId) return;
+        // For the main channel list, only show typing for top-level messages (no threadId)
+        if (!payload.threadId) {
+          setTypingUsers((prev) => {
+            const next = { ...prev };
+            if (!payload.isTyping) {
+              delete next[payload.userId];
+            } else {
+              next[payload.userId] = Date.now();
+            }
+            return next;
+          });
+          return;
+        }
+        // For threads, track typing per user when a thread is open
+        if (payload.threadId === threadRootId) {
+          setThreadTypingUsers((prev) => {
+            const next = { ...prev };
+            if (!payload.isTyping) {
+              delete next[payload.userId];
+            } else {
+              next[payload.userId] = Date.now();
+            }
+            return next;
+          });
+        }
+      };
+
       socket.on('message:new', handleNewMessage);
       socket.on('message:reaction', handleReaction);
       socket.on('notification:new', handleNotification);
+      socket.on('message:typing', handleTyping);
 
       return () => {
         socket.emit('leave:channel', { channelId });
         socket.off('message:new', handleNewMessage);
         socket.off('message:reaction', handleReaction);
         socket.off('notification:new', handleNotification);
+        socket.off('message:typing', handleTyping);
       };
     }
-  }, [socket, channelId, queryClient]);
+  }, [socket, channelId, queryClient, threadRootId]);
+
+  // Prune stale typing users (in case of missed stop events)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTypingUsers((prev) => {
+        const now = Date.now();
+        const next: Record<string, number> = {};
+        for (const [userId, ts] of Object.entries(prev)) {
+          if (now - ts < 4000) next[userId] = ts;
+        }
+        return next;
+      });
+      setThreadTypingUsers((prev) => {
+        const now = Date.now();
+        const next: Record<string, number> = {};
+        for (const [userId, ts] of Object.entries(prev)) {
+          if (now - ts < 4000) next[userId] = ts;
+        }
+        return next;
+      });
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!messages || messages.length === 0) return;
@@ -190,6 +246,13 @@ export function MessageList({ channelId }: MessageListProps) {
             </div>
           ))}
           <div ref={messagesEndRef} />
+          {/* Typing indicator */}
+          {Object.keys(typingUsers).length > 0 && (
+            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="inline-flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <span>Someone is typing…</span>
+            </div>
+          )}
         </div>
         <MessageInput channelId={channelId} />
       </div>
@@ -226,7 +289,13 @@ export function MessageList({ channelId }: MessageListProps) {
               </div>
             ))}
           </div>
-          <div className="border-t border-border p-2">
+          <div className="border-t border-border p-2 space-y-2">
+            {Object.keys(threadTypingUsers).length > 0 && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+                <span className="inline-flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+                <span>Someone is replying…</span>
+              </div>
+            )}
             <MessageInput channelId={channelId} threadId={threadRootId} replyToId={threadRootId} />
           </div>
         </div>

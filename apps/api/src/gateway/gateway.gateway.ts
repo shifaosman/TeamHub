@@ -112,6 +112,24 @@ export class GatewayGateway implements OnGatewayConnection, OnGatewayDisconnect 
         }
       }
     }
+    // Clean up note presence for disconnected user
+    if (client.userId) {
+      for (const [noteId, set] of this.notePresence.entries()) {
+        if (set.has(client.userId)) {
+          set.delete(client.userId);
+          const count = set.size;
+          if (count === 0) {
+            this.notePresence.delete(noteId);
+          } else {
+            this.notePresence.set(noteId, set);
+          }
+          this.server.to(`note:${noteId}`).emit('note:presence', {
+            noteId,
+            count,
+          });
+        }
+      }
+    }
     this.logger.log(`Client ${client.id} disconnected`);
   }
 
@@ -162,29 +180,18 @@ export class GatewayGateway implements OnGatewayConnection, OnGatewayDisconnect 
   @SubscribeMessage('message:typing')
   async handleTyping(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { channelId: string; threadId?: string }
+    @MessageBody() data: { channelId: string; threadId?: string; isTyping?: boolean }
   ) {
     if (!client.userId) {
       return;
     }
 
-    // Broadcast typing indicator to channel (excluding sender)
     client.to(`channel:${data.channelId}`).emit('message:typing', {
       channelId: data.channelId,
       threadId: data.threadId,
       userId: client.userId,
-      isTyping: true,
+      isTyping: data.isTyping !== false,
     });
-
-    // Stop typing after 3 seconds
-    setTimeout(() => {
-      client.to(`channel:${data.channelId}`).emit('message:typing', {
-        channelId: data.channelId,
-        threadId: data.threadId,
-        userId: client.userId,
-        isTyping: false,
-      });
-    }, 3000);
   }
 
   @SubscribeMessage('message:create')
@@ -347,6 +354,8 @@ export class GatewayGateway implements OnGatewayConnection, OnGatewayDisconnect 
     return { success: true };
   }
 
+  private readonly notePresence = new Map<string, Set<string>>(); // noteId -> set of userIds
+
   @SubscribeMessage('note:join')
   async handleJoinNote(
     @ConnectedSocket() client: AuthenticatedSocket,
@@ -357,6 +366,14 @@ export class GatewayGateway implements OnGatewayConnection, OnGatewayDisconnect 
     }
 
     client.join(`note:${data.noteId}`);
+
+    const set = this.notePresence.get(data.noteId) ?? new Set<string>();
+    set.add(client.userId);
+    this.notePresence.set(data.noteId, set);
+    this.server.to(`note:${data.noteId}`).emit('note:presence', {
+      noteId: data.noteId,
+      count: set.size,
+    });
     return { success: true, noteId: data.noteId };
   }
 
@@ -366,6 +383,21 @@ export class GatewayGateway implements OnGatewayConnection, OnGatewayDisconnect 
     @MessageBody() data: { noteId: string }
   ) {
     client.leave(`note:${data.noteId}`);
+
+    const set = this.notePresence.get(data.noteId);
+    if (set && client.userId) {
+      set.delete(client.userId);
+      const count = set.size;
+      if (count === 0) {
+        this.notePresence.delete(data.noteId);
+      } else {
+        this.notePresence.set(data.noteId, set);
+      }
+      this.server.to(`note:${data.noteId}`).emit('note:presence', {
+        noteId: data.noteId,
+        count,
+      });
+    }
     return { success: true };
   }
 

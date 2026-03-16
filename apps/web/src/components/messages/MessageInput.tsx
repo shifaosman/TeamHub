@@ -53,6 +53,16 @@ export function MessageInput({ channelId, threadId, replyToId }: MessageInputPro
     setSelectedMentionIndex(0);
   }, [filteredMembers.length]);
 
+  const emitTyping = () => {
+    if (!socket) return;
+    socket.emit('message:typing', { channelId, threadId, isTyping: true });
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(
+      () => socket?.emit('message:typing', { channelId, threadId, isTyping: false }),
+      3000
+    );
+  };
+
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const v = e.target.value;
     const pos = e.target.selectionStart ?? v.length;
@@ -63,20 +73,12 @@ export function MessageInput({ channelId, threadId, replyToId }: MessageInputPro
       const afterAt = textBeforeCaret.slice(lastAt + 1);
       if (!/\s/.test(afterAt)) {
         setMentionStart(lastAt);
-        if (socket) {
-          socket.emit('message:typing', { channelId, threadId });
-          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-          typingTimeoutRef.current = setTimeout(() => socket?.emit('message:typing', { channelId, threadId, isTyping: false }), 3000);
-        }
+        emitTyping();
         return;
       }
     }
     setMentionStart(null);
-    if (socket) {
-      socket.emit('message:typing', { channelId, threadId });
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      typingTimeoutRef.current = setTimeout(() => socket?.emit('message:typing', { channelId, threadId, isTyping: false }), 3000);
-    }
+    emitTyping();
   };
 
   const insertMention = (username: string) => {
