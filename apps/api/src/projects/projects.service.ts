@@ -8,6 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserRole } from '@teamhub/shared';
 import { WorkspacesService } from '../workspaces/workspaces.service';
+import { hasPermission, Permission, rolesWithPermission } from '../common/permissions';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { AddProjectMemberDto } from './dto/add-project-member.dto';
@@ -28,11 +29,25 @@ export class ProjectsService {
   ) {}
 
   async create(userId: string, dto: CreateProjectDto): Promise<ProjectDocument> {
-    // Verify workspace exists and user is a member
     await this.workspacesService.findWorkspaceById(dto.workspaceId);
     const workspaceMember = await this.workspacesService.getWorkspaceMember(dto.workspaceId, userId);
     if (!workspaceMember) {
       throw new ForbiddenException('You are not a member of this workspace');
+    }
+    if (!hasPermission(workspaceMember.role as UserRole, Permission.CREATE_PROJECT)) {
+      throw new ForbiddenException('You do not have permission to create projects');
+    }
+
+    if (dto.teamIds?.length) {
+      await this.workspacesService.validateTeamIdsInWorkspace(dto.workspaceId, dto.teamIds);
+      const canScopeToTeams = await this.workspacesService.userHasTeamAccess(
+        dto.workspaceId,
+        userId,
+        dto.teamIds
+      );
+      if (!canScopeToTeams) {
+        throw new ForbiddenException('You can only assign teams you belong to');
+      }
     }
 
     const project = new this.projectModel({
@@ -41,6 +56,7 @@ export class ProjectsService {
       description: dto.description,
       createdBy: userId,
       members: [{ userId, role: 'admin' }],
+      teamIds: dto.teamIds || [],
     });
 
     const saved = await project.save();
@@ -62,15 +78,24 @@ export class ProjectsService {
       throw new ForbiddenException('You are not a member of this workspace');
     }
 
-    const canViewAll =
-      workspaceMember.role === UserRole.OWNER || workspaceMember.role === UserRole.ADMIN;
+    const canViewAll = hasPermission(workspaceMember.role as UserRole, Permission.MANAGE_PROJECT_MEMBERS);
 
     const query: any = { workspaceId };
     if (!canViewAll) {
       query['members.userId'] = userId;
     }
 
-    return this.projectModel.find(query).sort({ createdAt: -1 }).exec();
+    const projects = await this.projectModel.find(query).sort({ createdAt: -1 }).exec();
+    const visible: ProjectDocument[] = [];
+    for (const project of projects) {
+      const hasTeamAccess = await this.workspacesService.userHasTeamAccess(
+        project.workspaceId,
+        userId,
+        project.teamIds
+      );
+      if (hasTeamAccess) visible.push(project);
+    }
+    return visible;
   }
 
   async findOne(id: string, userId: string): Promise<ProjectDocument> {
@@ -87,11 +112,19 @@ export class ProjectsService {
       throw new ForbiddenException('You are not a member of this workspace');
     }
 
-    const canViewAll =
-      workspaceMember.role === UserRole.OWNER || workspaceMember.role === UserRole.ADMIN;
+    const canViewAll = hasPermission(workspaceMember.role as UserRole, Permission.MANAGE_PROJECT_MEMBERS);
 
     if (!canViewAll && !this.isProjectMember(project, userId)) {
       throw new ForbiddenException('You are not a member of this project');
+    }
+
+    const hasTeamAccess = await this.workspacesService.userHasTeamAccess(
+      project.workspaceId,
+      userId,
+      project.teamIds
+    );
+    if (!hasTeamAccess) {
+      throw new ForbiddenException('You are not allowed to access this project');
     }
 
     return project;
@@ -100,6 +133,18 @@ export class ProjectsService {
   async update(id: string, userId: string, dto: UpdateProjectDto): Promise<ProjectDocument> {
     const project = await this.findOne(id, userId);
     await this.ensureProjectAdminOrWorkspaceAdmin(project, userId);
+
+    if (dto.teamIds) {
+      await this.workspacesService.validateTeamIdsInWorkspace(project.workspaceId, dto.teamIds);
+      const canScopeToTeams = await this.workspacesService.userHasTeamAccess(
+        project.workspaceId,
+        userId,
+        dto.teamIds
+      );
+      if (!canScopeToTeams) {
+        throw new ForbiddenException('You can only assign teams you belong to');
+      }
+    }
 
     Object.assign(project, dto);
     const saved = await project.save();
@@ -194,11 +239,11 @@ export class ProjectsService {
       throw new NotFoundException(`Project with ID ${id} not found`);
     }
 
-    // Only workspace owner/admin can delete projects
-    await this.workspacesService.ensureMemberWithRole(project.workspaceId, userId, [
-      UserRole.OWNER,
-      UserRole.ADMIN,
-    ]);
+    await this.workspacesService.ensureMemberWithRole(
+      project.workspaceId,
+      userId,
+      rolesWithPermission(Permission.DELETE_PROJECT)
+    );
 
     await this.taskModel.deleteMany({ projectId: id }).exec();
     await this.commentModel.deleteMany({ projectId: id }).exec();
@@ -229,8 +274,7 @@ export class ProjectsService {
       throw new ForbiddenException('You are not a member of this workspace');
     }
 
-    const canBypass =
-      workspaceMember.role === UserRole.OWNER || workspaceMember.role === UserRole.ADMIN;
+    const canBypass = hasPermission(workspaceMember.role as UserRole, Permission.MANAGE_PROJECT_MEMBERS);
 
     if (!canBypass && !this.isProjectMember(project, userId)) {
       throw new ForbiddenException('You are not a member of this project');
@@ -255,13 +299,11 @@ export class ProjectsService {
       throw new ForbiddenException('You are not a member of this workspace');
     }
 
-    const isWorkspaceAdmin =
-      workspaceMember.role === UserRole.OWNER || workspaceMember.role === UserRole.ADMIN;
-
+    const isWorkspaceLevel = hasPermission(workspaceMember.role as UserRole, Permission.UPDATE_PROJECT);
     const projectMember = project.members.find((m) => m.userId === userId);
     const isProjectAdmin = projectMember?.role === 'admin';
 
-    if (!isWorkspaceAdmin && !isProjectAdmin) {
+    if (!isWorkspaceLevel && !isProjectAdmin) {
       throw new ForbiddenException('Insufficient permissions');
     }
   }

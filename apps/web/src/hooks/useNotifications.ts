@@ -2,10 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { Notification as SharedNotification } from '@teamhub/shared';
 
-export interface Notification extends SharedNotification {
+export type Notification = Omit<SharedNotification, 'createdAt'> & {
   _id: string;
-  createdAt: string;
-}
+  createdAt: string | Date;
+};
 
 export interface NotificationPreference {
   _id: string;

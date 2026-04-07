@@ -17,6 +17,8 @@ import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { InviteToWorkspaceDto } from './dto/invite-to-workspace.dto';
 import { CreateInviteLinkDto } from './dto/create-invite-link.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
+import { CreateTeamDto } from './dto/create-team.dto';
+import { AddTeamMembersDto } from './dto/add-team-members.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
@@ -46,8 +48,8 @@ export class WorkspacesController {
   @Get('organizations/:id')
   @ApiOperation({ summary: 'Get organization by ID' })
   @ApiParam({ name: 'id', description: 'Organization ID' })
-  getOrganization(@Param('id') id: string) {
-    return this.workspacesService.findOrganizationById(id);
+  getOrganization(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.workspacesService.findOrganizationById(id, user.userId);
   }
 
   // Workspaces
@@ -66,15 +68,18 @@ export class WorkspacesController {
   @Get('workspaces/organization/:organizationId')
   @ApiOperation({ summary: 'Get workspaces by organization' })
   @ApiParam({ name: 'organizationId', description: 'Organization ID' })
-  getWorkspacesByOrganization(@Param('organizationId') organizationId: string) {
-    return this.workspacesService.findWorkspacesByOrganization(organizationId);
+  getWorkspacesByOrganization(
+    @Param('organizationId') organizationId: string,
+    @CurrentUser() user: any
+  ) {
+    return this.workspacesService.findWorkspacesByOrganization(organizationId, user.userId);
   }
 
   @Get('workspaces/:id')
   @ApiOperation({ summary: 'Get workspace by ID' })
   @ApiParam({ name: 'id', description: 'Workspace ID' })
-  getWorkspace(@Param('id') id: string) {
-    return this.workspacesService.findWorkspaceById(id);
+  getWorkspace(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.workspacesService.findWorkspaceById(id, user.userId);
   }
 
   @Patch('workspaces/:id')
@@ -99,8 +104,8 @@ export class WorkspacesController {
   @Get('workspaces/:id/members')
   @ApiOperation({ summary: 'Get workspace members' })
   @ApiParam({ name: 'id', description: 'Workspace ID' })
-  getWorkspaceMembers(@Param('id') id: string) {
-    return this.workspacesService.getWorkspaceMembers(id);
+  getWorkspaceMembers(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.workspacesService.getWorkspaceMembers(id, user.userId);
   }
 
   @Patch('workspaces/:id/members/:userId/role')
@@ -131,6 +136,38 @@ export class WorkspacesController {
     @CurrentUser() user: any
   ) {
     return this.workspacesService.removeMember(workspaceId, targetUserId, user.userId);
+  }
+
+  // Teams
+  @Post('teams')
+  @ApiOperation({ summary: 'Create workspace team' })
+  createTeam(@CurrentUser() user: any, @Body() dto: CreateTeamDto) {
+    return this.workspacesService.createTeam(user.userId, dto);
+  }
+
+  @Get('workspaces/:id/teams')
+  @ApiOperation({ summary: 'Get workspace teams' })
+  @ApiParam({ name: 'id', description: 'Workspace ID' })
+  getWorkspaceTeams(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.workspacesService.getWorkspaceTeams(id, user.userId);
+  }
+
+  @Post('teams/:id/members')
+  @ApiOperation({ summary: 'Add members to team' })
+  @ApiParam({ name: 'id', description: 'Team ID' })
+  addMembersToTeam(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Body() dto: AddTeamMembersDto
+  ) {
+    return this.workspacesService.addMembersToTeam(id, user.userId, dto);
+  }
+
+  @Get('teams/:id/members')
+  @ApiOperation({ summary: 'Get team members' })
+  @ApiParam({ name: 'id', description: 'Team ID' })
+  getTeamMembers(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.workspacesService.getTeamMembers(id, user.userId);
   }
 
   // Workspace Invites
@@ -166,8 +203,8 @@ export class WorkspacesController {
   @Get('workspaces/:id/invites')
   @ApiOperation({ summary: 'Get workspace invites' })
   @ApiParam({ name: 'id', description: 'Workspace ID' })
-  getWorkspaceInvites(@Param('id') id: string) {
-    return this.workspacesService.getWorkspaceInvites(id);
+  getWorkspaceInvites(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.workspacesService.getWorkspaceInvites(id, user.userId);
   }
 
   // Audit Logs
@@ -176,9 +213,10 @@ export class WorkspacesController {
   @ApiParam({ name: 'id', description: 'Workspace ID' })
   getAuditLogs(
     @Param('id') id: string,
+    @CurrentUser() user: any,
     @Query('limit') limit?: number,
     @Query('offset') offset?: number
   ) {
-    return this.workspacesService.getAuditLogs(id, limit || 50, offset || 0);
+    return this.workspacesService.getAuditLogs(id, user.userId, limit || 50, offset || 0);
   }
 }

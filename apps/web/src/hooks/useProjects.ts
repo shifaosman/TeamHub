@@ -28,7 +28,7 @@ export function useProject(projectId: string) {
 export function useCreateProject() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { workspaceId: string; name: string; description?: string }) =>
+    mutationFn: (data: { workspaceId: string; name: string; description?: string; teamIds?: string[] }) =>
       projectsApi.createProject(data),
     onSuccess: (project) => {
       queryClient.invalidateQueries({ queryKey: projectsKeys.list(project.workspaceId) });
@@ -40,8 +40,12 @@ export function useCreateProject() {
 export function useUpdateProject() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { projectId: string; name?: string; description?: string }) => {
-      return projectsApi.updateProject(data.projectId, { name: data.name, description: data.description });
+    mutationFn: async (data: { projectId: string; name?: string; description?: string; teamIds?: string[] }) => {
+      return projectsApi.updateProject(data.projectId, {
+        name: data.name,
+        description: data.description,
+        teamIds: data.teamIds,
+      });
     },
     onSuccess: (project) => {
       queryClient.setQueryData(projectsKeys.detail(project._id), project);

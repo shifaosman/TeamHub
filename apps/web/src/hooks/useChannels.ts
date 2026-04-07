@@ -11,6 +11,7 @@ export interface Channel {
   isArchived: boolean;
   createdBy: string;
   memberIds: string[];
+  teamIds?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -35,6 +36,7 @@ export function useCreateChannel() {
       type: string;
       description?: string;
       memberIds?: string[];
+      teamIds?: string[];
     }) => {
       const response = await api.post('/channels', data);
       return response.data;

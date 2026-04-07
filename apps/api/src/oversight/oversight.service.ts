@@ -1,10 +1,10 @@
 import { ForbiddenException, Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { UserRole } from '@teamhub/shared';
+import { UserRole, NotificationType } from '@teamhub/shared';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { NotificationType } from '@teamhub/shared';
+import { hasPermission, Permission, rolesWithPermission } from '../common/permissions';
 import { Task, TaskDocument } from '../tasks/schemas/task.schema';
 import { WorkspaceMember, WorkspaceMemberDocument } from '../workspaces/schemas/workspace-member.schema';
 import { Report, ReportDocument } from '../reports/schemas/report.schema';
@@ -29,13 +29,13 @@ export class OversightService implements OnModuleInit {
   }
 
   async getSupervisorTeams(userId: string) {
-    await this.ensureRoleInAnyWorkspace(userId, [UserRole.SUPERVISOR, UserRole.ADMIN, UserRole.OWNER]);
+    await this.ensureRoleInAnyWorkspace(userId, rolesWithPermission(Permission.VIEW_SUPERVISOR_DASHBOARD));
     const workspaces = await this.workspacesService.getUserWorkspaces(userId);
     return workspaces.map((w) => ({ id: w._id.toString(), name: w.name }));
   }
 
   async getSupervisorTeamStats(userId: string, teamId: string) {
-    await this.ensureRole(teamId, userId, [UserRole.SUPERVISOR, UserRole.ADMIN, UserRole.OWNER]);
+    await this.ensureRole(teamId, userId, rolesWithPermission(Permission.VIEW_SUPERVISOR_DASHBOARD));
     const now = new Date();
     const [totalTasks, completedTasks, delayedTasks, activeMembers] = await Promise.all([
       this.taskModel.countDocuments({ workspaceId: teamId }),
@@ -47,12 +47,12 @@ export class OversightService implements OnModuleInit {
   }
 
   async getHrReports(userId: string) {
-    await this.ensureRoleInAnyWorkspace(userId, [UserRole.HR, UserRole.SUPERVISOR, UserRole.ADMIN, UserRole.OWNER]);
+    await this.ensureRoleInAnyWorkspace(userId, rolesWithPermission(Permission.VIEW_HR_REPORTS));
     return this.reportModel.find().sort({ createdAt: -1 }).limit(300).exec();
   }
 
   async getHrWorkload(userId: string) {
-    await this.ensureRoleInAnyWorkspace(userId, [UserRole.HR, UserRole.SUPERVISOR, UserRole.ADMIN, UserRole.OWNER]);
+    await this.ensureRoleInAnyWorkspace(userId, rolesWithPermission(Permission.VIEW_WORKLOAD));
     return this.computeWorkloadSummary();
   }
 

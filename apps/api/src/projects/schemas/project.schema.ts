@@ -23,6 +23,9 @@ export class Project {
 
   @Prop({ type: [ProjectMemberSchema], default: [] })
   members!: ProjectMember[];
+
+  @Prop({ type: [String], default: [], index: true })
+  teamIds!: string[];
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

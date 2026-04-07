@@ -23,7 +23,6 @@ describe('GatewayGateway (typing and note presence)', () => {
     }).compile();
 
     gateway = module.get<GatewayGateway>(GatewayGateway);
-    // @ts-expect-error override server for test
     gateway.server = { emit: serverEmitMock, to: serverToMock } as any;
     serverEmitMock.mockReset();
     serverToEmitMock.mockReset();

@@ -16,7 +16,8 @@ import { CreateCommentDto } from './dto/create-comment.dto';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { NotificationType } from '@teamhub/shared';
+import { NotificationType, UserRole } from '@teamhub/shared';
+import { hasPermission, Permission, rolesWithPermission } from '../common/permissions';
 
 @Injectable()
 export class NotesService {
@@ -32,13 +33,30 @@ export class NotesService {
   ) {}
 
   async create(userId: string, createNoteDto: CreateNoteDto): Promise<NoteDocument> {
-    // Verify workspace membership
     const workspaceMember = await this.workspacesService.getWorkspaceMember(
       createNoteDto.workspaceId,
       userId
     );
     if (!workspaceMember) {
       throw new ForbiddenException('You are not a member of this workspace');
+    }
+    if (!hasPermission(workspaceMember.role as UserRole, Permission.CREATE_NOTE)) {
+      throw new ForbiddenException('You do not have permission to create notes');
+    }
+
+    if (createNoteDto.teamIds?.length) {
+      await this.workspacesService.validateTeamIdsInWorkspace(
+        createNoteDto.workspaceId,
+        createNoteDto.teamIds
+      );
+      const canScopeToTeams = await this.workspacesService.userHasTeamAccess(
+        createNoteDto.workspaceId,
+        userId,
+        createNoteDto.teamIds
+      );
+      if (!canScopeToTeams) {
+        throw new ForbiddenException('You can only assign teams you belong to');
+      }
     }
 
     // If parentId is provided, verify parent exists
@@ -175,6 +193,18 @@ export class NotesService {
       }
       note.parentId = updateDto.parentId;
     }
+    if (updateDto.teamIds) {
+      await this.workspacesService.validateTeamIdsInWorkspace(note.workspaceId, updateDto.teamIds);
+      const canScopeToTeams = await this.workspacesService.userHasTeamAccess(
+        note.workspaceId,
+        userId,
+        updateDto.teamIds
+      );
+      if (!canScopeToTeams) {
+        throw new ForbiddenException('You can only assign teams you belong to');
+      }
+      note.teamIds = updateDto.teamIds;
+    }
 
     note.updatedBy = userId;
     const saved = await note.save();
@@ -219,11 +249,16 @@ export class NotesService {
   async delete(id: string, userId: string): Promise<void> {
     const note = await this.findOne(id, userId);
 
-    // Only admin or note creator can delete
     const hasAdminAccess = await this.checkNotePermission(id, userId, ['admin']);
     const isCreator = note.createdBy.toString() === userId;
+    const workspaceMember = await this.workspacesService.getWorkspaceMember(
+      note.workspaceId,
+      userId
+    );
+    const canDeleteByRole =
+      workspaceMember && hasPermission(workspaceMember.role as UserRole, Permission.DELETE_NOTE);
 
-    if (!hasAdminAccess && !isCreator) {
+    if (!hasAdminAccess && !isCreator && !canDeleteByRole) {
       throw new ForbiddenException('You do not have permission to delete this note');
     }
 
@@ -438,6 +473,15 @@ export class NotesService {
       userId
     );
     if (!workspaceMember) {
+      return false;
+    }
+
+    const hasTeamAccess = await this.workspacesService.userHasTeamAccess(
+      note.workspaceId,
+      userId,
+      note.teamIds
+    );
+    if (!hasTeamAccess) {
       return false;
     }
 

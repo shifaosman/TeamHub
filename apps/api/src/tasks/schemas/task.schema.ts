@@ -87,5 +87,3 @@ export const TaskSchema = SchemaFactory.createForClass(Task);
 TaskSchema.index({ projectId: 1, status: 1 });
 TaskSchema.index({ projectId: 1, order: 1 });
 TaskSchema.index({ workspaceId: 1, createdAt: -1 });
-TaskSchema.index({ sourceMessageId: 1 });
-TaskSchema.index({ sourceChannelId: 1 });

@@ -20,6 +20,7 @@ const ChannelPage = lazy(() => import('@/pages/ChannelPage').then((m) => ({ defa
 const CreateOrganizationPage = lazy(() => import('@/pages/workspaces/CreateOrganizationPage').then((m) => ({ default: m.CreateOrganizationPage })));
 const CreateWorkspacePage = lazy(() => import('@/pages/workspaces/CreateWorkspacePage').then((m) => ({ default: m.CreateWorkspacePage })));
 const JoinWorkspacePage = lazy(() => import('@/pages/workspaces/JoinWorkspacePage').then((m) => ({ default: m.JoinWorkspacePage })));
+const TeamsPage = lazy(() => import('@/pages/workspaces/TeamsPage').then((m) => ({ default: m.TeamsPage })));
 const CreateChannelPage = lazy(() => import('@/pages/channels/CreateChannelPage').then((m) => ({ default: m.CreateChannelPage })));
 const NotePage = lazy(() => import('@/pages/NotePage').then((m) => ({ default: m.NotePage })));
 const NotesPage = lazy(() => import('@/pages/notes/NotesPage').then((m) => ({ default: m.NotesPage })));
@@ -161,6 +162,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <FilesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/workspaces/:workspaceId/teams"
+            element={
+              <ProtectedRoute>
+                <TeamsPage />
               </ProtectedRoute>
             }
           />

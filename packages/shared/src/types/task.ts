@@ -1,4 +1,3 @@
-import { z } from 'zod';
 export type TaskStatus = "todo" | "in-progress" | "done";
 
 export interface Task {

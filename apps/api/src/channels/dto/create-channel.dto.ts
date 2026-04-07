@@ -29,4 +29,10 @@ export class CreateChannelDto {
   @IsArray()
   @IsString({ each: true })
   declare memberIds?: string[];
+
+  @ApiProperty({ required: false, type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  declare teamIds?: string[];
 }

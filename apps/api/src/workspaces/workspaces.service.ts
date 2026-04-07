@@ -14,16 +14,22 @@ import { Workspace, WorkspaceDocument } from './schemas/workspace.schema';
 import { WorkspaceMember, WorkspaceMemberDocument } from './schemas/workspace-member.schema';
 import { WorkspaceInvite, WorkspaceInviteDocument } from './schemas/workspace-invite.schema';
 import { AuditLog, AuditLogDocument } from './schemas/audit-log.schema';
+import { Team, TeamDocument } from './schemas/team.schema';
+import { TeamMember, TeamMemberDocument } from './schemas/team-member.schema';
+import { Channel, ChannelDocument } from '../channels/schemas/channel.schema';
+import { ChannelMember, ChannelMemberDocument } from '../channels/schemas/channel-member.schema';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { InviteToWorkspaceDto } from './dto/invite-to-workspace.dto';
 import { CreateInviteLinkDto } from './dto/create-invite-link.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
-import { UserRole } from '@teamhub/shared';
+import { CreateTeamDto } from './dto/create-team.dto';
+import { AddTeamMembersDto } from './dto/add-team-members.dto';
+import { UserRole, ChannelType, NotificationType } from '@teamhub/shared';
 import { UsersService } from '../users/users.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { NotificationType } from '@teamhub/shared';
+import { hasPermission, Permission, rolesWithPermission } from '../common/permissions';
 
 @Injectable()
 export class WorkspacesService {
@@ -38,6 +44,14 @@ export class WorkspacesService {
     private workspaceInviteModel: Model<WorkspaceInviteDocument>,
     @InjectModel(AuditLog.name)
     private auditLogModel: Model<AuditLogDocument>,
+    @InjectModel(Team.name)
+    private teamModel: Model<TeamDocument>,
+    @InjectModel(TeamMember.name)
+    private teamMemberModel: Model<TeamMemberDocument>,
+    @InjectModel(Channel.name)
+    private channelModel: Model<ChannelDocument>,
+    @InjectModel(ChannelMember.name)
+    private channelMemberModel: Model<ChannelMemberDocument>,
     @Inject(forwardRef(() => ActivityService))
     private activityService: ActivityService,
     private usersService: UsersService,
@@ -63,10 +77,30 @@ export class WorkspacesService {
     return organization.save();
   }
 
-  async findOrganizationById(id: string): Promise<OrganizationDocument> {
+  async findOrganizationById(id: string, userId?: string): Promise<OrganizationDocument> {
     const org = await this.organizationModel.findById(id).exec();
     if (!org) {
       throw new NotFoundException(`Organization with ID ${id} not found`);
+    }
+    if (userId) {
+      const isOwner = org.ownerId === userId;
+      if (!isOwner) {
+        const orgWorkspaces = await this.workspaceModel
+          .find({ organizationId: id })
+          .select('_id')
+          .lean()
+          .exec();
+        const workspaceIds = orgWorkspaces.map((w) => w._id.toString());
+        const membership = workspaceIds.length > 0
+          ? await this.workspaceMemberModel
+              .findOne({ workspaceId: { $in: workspaceIds }, userId })
+              .lean()
+              .exec()
+          : null;
+        if (!membership) {
+          throw new ForbiddenException('You do not have access to this organization');
+        }
+      }
     }
     return org;
   }
@@ -80,10 +114,13 @@ export class WorkspacesService {
     userId: string,
     createWorkspaceDto: CreateWorkspaceDto
   ): Promise<WorkspaceDocument> {
-    // Verify organization exists and user is owner
+    // Verify organization exists and user has elevated role in this organization
     const org = await this.findOrganizationById(createWorkspaceDto.organizationId);
-    if (org.ownerId !== userId) {
-      throw new ForbiddenException('Only organization owner can create workspaces');
+    const canCreate = await this.canCreateWorkspaceInOrganization(userId, org._id.toString());
+    if (!canCreate) {
+      throw new ForbiddenException(
+        'Only owner, admin, supervisor, or leader can create workspaces in this organization'
+      );
     }
 
     // Check if slug already exists in this organization
@@ -112,6 +149,22 @@ export class WorkspacesService {
       role: UserRole.OWNER,
     });
 
+    // Create a default public channel so users can start chatting immediately.
+    const defaultChannel = await this.channelModel.create({
+      workspaceId: savedWorkspace._id.toString(),
+      name: 'general',
+      slug: 'general',
+      type: ChannelType.PUBLIC,
+      description: 'Default channel for workspace conversations',
+      createdBy: userId,
+      memberIds: [userId],
+      isArchived: false,
+    });
+    await this.channelMemberModel.create({
+      channelId: defaultChannel._id.toString(),
+      userId,
+    });
+
     // Create audit log
     await this.createAuditLog({
       workspaceId: savedWorkspace._id.toString(),
@@ -124,16 +177,32 @@ export class WorkspacesService {
     return savedWorkspace;
   }
 
-  async findWorkspaceById(id: string): Promise<WorkspaceDocument> {
+  async findWorkspaceById(id: string, userId?: string): Promise<WorkspaceDocument> {
     const workspace = await this.workspaceModel.findById(id).exec();
     if (!workspace) {
       throw new NotFoundException(`Workspace with ID ${id} not found`);
     }
+    if (userId) {
+      const member = await this.getWorkspaceMember(id, userId);
+      if (!member) {
+        throw new ForbiddenException('You are not a member of this workspace');
+      }
+    }
     return workspace;
   }
 
-  async findWorkspacesByOrganization(organizationId: string): Promise<WorkspaceDocument[]> {
-    return this.workspaceModel.find({ organizationId }).exec();
+  async findWorkspacesByOrganization(
+    organizationId: string,
+    userId?: string
+  ): Promise<WorkspaceDocument[]> {
+    const workspaces = await this.workspaceModel.find({ organizationId }).exec();
+    if (!userId) return workspaces;
+    const accessible: WorkspaceDocument[] = [];
+    for (const ws of workspaces) {
+      const member = await this.getWorkspaceMember(ws._id.toString(), userId);
+      if (member) accessible.push(ws);
+    }
+    return accessible;
   }
 
   async updateWorkspace(
@@ -141,8 +210,11 @@ export class WorkspacesService {
     userId: string,
     updateDto: UpdateWorkspaceDto
   ): Promise<WorkspaceDocument> {
-    // Check permissions
-    await this.ensureMemberWithRole(workspaceId, userId, [UserRole.OWNER, UserRole.ADMIN]);
+    await this.ensureMemberWithRole(
+      workspaceId,
+      userId,
+      rolesWithPermission(Permission.UPDATE_WORKSPACE)
+    );
 
     const workspace = await this.findWorkspaceById(workspaceId);
     Object.assign(workspace, updateDto);
@@ -166,8 +238,11 @@ export class WorkspacesService {
   }
 
   async deleteWorkspace(workspaceId: string, userId: string): Promise<void> {
-    // Only owner can delete
-    await this.ensureMemberWithRole(workspaceId, userId, [UserRole.OWNER]);
+    await this.ensureMemberWithRole(
+      workspaceId,
+      userId,
+      rolesWithPermission(Permission.DELETE_WORKSPACE)
+    );
 
     await this.workspaceModel.findByIdAndDelete(workspaceId).exec();
     await this.workspaceMemberModel.deleteMany({ workspaceId }).exec();
@@ -183,7 +258,16 @@ export class WorkspacesService {
   }
 
   // Workspace Members
-  async getWorkspaceMembers(workspaceId: string): Promise<WorkspaceMemberDocument[]> {
+  async getWorkspaceMembers(
+    workspaceId: string,
+    requestingUserId?: string
+  ): Promise<WorkspaceMemberDocument[]> {
+    if (requestingUserId) {
+      const member = await this.getWorkspaceMember(workspaceId, requestingUserId);
+      if (!member) {
+        throw new ForbiddenException('You are not a member of this workspace');
+      }
+    }
     return this.workspaceMemberModel
       .find({ workspaceId })
       .populate('userId', 'email username firstName lastName avatar')
@@ -213,8 +297,11 @@ export class WorkspacesService {
     updaterUserId: string,
     updateDto: UpdateMemberRoleDto
   ): Promise<WorkspaceMemberDocument> {
-    // Only owner/admin can update roles
-    await this.ensureMemberWithRole(workspaceId, updaterUserId, [UserRole.OWNER, UserRole.ADMIN]);
+    await this.ensureMemberWithRole(
+      workspaceId,
+      updaterUserId,
+      rolesWithPermission(Permission.MANAGE_MEMBERS)
+    );
 
     // Cannot change owner role
     const targetMember = await this.getWorkspaceMember(workspaceId, targetUserId);
@@ -246,8 +333,11 @@ export class WorkspacesService {
     targetUserId: string,
     removerUserId: string
   ): Promise<void> {
-    // Only owner/admin can remove members
-    await this.ensureMemberWithRole(workspaceId, removerUserId, [UserRole.OWNER, UserRole.ADMIN]);
+    await this.ensureMemberWithRole(
+      workspaceId,
+      removerUserId,
+      rolesWithPermission(Permission.MANAGE_MEMBERS)
+    );
 
     const targetMember = await this.getWorkspaceMember(workspaceId, targetUserId);
     if (!targetMember) {
@@ -260,6 +350,7 @@ export class WorkspacesService {
     }
 
     await this.workspaceMemberModel.deleteOne({ workspaceId, userId: targetUserId }).exec();
+    await this.teamMemberModel.deleteMany({ workspaceId, userId: targetUserId }).exec();
 
     await this.createAuditLog({
       workspaceId,
@@ -276,8 +367,11 @@ export class WorkspacesService {
     inviterUserId: string,
     inviteDto: InviteToWorkspaceDto
   ): Promise<WorkspaceInviteDocument> {
-    // Check permissions
-    await this.ensureMemberWithRole(workspaceId, inviterUserId, [UserRole.OWNER, UserRole.ADMIN]);
+    await this.ensureMemberWithRole(
+      workspaceId,
+      inviterUserId,
+      rolesWithPermission(Permission.INVITE_MEMBERS)
+    );
 
     // Note: In a real app, you'd check if a user with this email is already a member
     // For now, we'll just check for existing invites
@@ -346,7 +440,11 @@ export class WorkspacesService {
     inviterUserId: string,
     dto: CreateInviteLinkDto
   ): Promise<WorkspaceInviteDocument> {
-    await this.ensureMemberWithRole(workspaceId, inviterUserId, [UserRole.OWNER, UserRole.ADMIN]);
+    await this.ensureMemberWithRole(
+      workspaceId,
+      inviterUserId,
+      rolesWithPermission(Permission.INVITE_MEMBERS)
+    );
 
     const expiresInDays = dto.expiresInDays ?? 7;
     const maxUses = dto.maxUses ?? 1;
@@ -439,7 +537,17 @@ export class WorkspacesService {
     return savedMember;
   }
 
-  async getWorkspaceInvites(workspaceId: string): Promise<WorkspaceInviteDocument[]> {
+  async getWorkspaceInvites(
+    workspaceId: string,
+    requestingUserId?: string
+  ): Promise<WorkspaceInviteDocument[]> {
+    if (requestingUserId) {
+      await this.ensureMemberWithRole(
+        workspaceId,
+        requestingUserId,
+        rolesWithPermission(Permission.INVITE_MEMBERS)
+      );
+    }
     return this.workspaceInviteModel
       .find({ workspaceId, expiresAt: { $gt: new Date() }, usedAt: null })
       .populate('invitedBy', 'username email')
@@ -462,9 +570,15 @@ export class WorkspacesService {
 
   async getAuditLogs(
     workspaceId: string,
+    requestingUserId: string,
     limit = 50,
     offset = 0
   ): Promise<AuditLogDocument[]> {
+    await this.ensureMemberWithRole(
+      workspaceId,
+      requestingUserId,
+      rolesWithPermission(Permission.VIEW_AUDIT_LOGS)
+    );
     return this.auditLogModel
       .find({ workspaceId })
       .sort({ createdAt: -1 })
@@ -501,5 +615,154 @@ export class WorkspacesService {
     }
 
     return this.workspaceModel.find({ _id: { $in: workspaceIds } }).exec();
+  }
+
+  // Teams
+  async createTeam(userId: string, dto: CreateTeamDto): Promise<TeamDocument> {
+    await this.ensureMemberWithRole(
+      dto.workspaceId,
+      userId,
+      rolesWithPermission(Permission.CREATE_TEAM)
+    );
+
+    const existing = await this.teamModel
+      .findOne({ workspaceId: dto.workspaceId, name: dto.name })
+      .lean()
+      .exec();
+    if (existing) {
+      throw new BadRequestException('Team with this name already exists in the workspace');
+    }
+
+    const team = await this.teamModel.create({
+      workspaceId: dto.workspaceId,
+      name: dto.name,
+      description: dto.description,
+      createdBy: userId,
+    });
+
+    // Creator is added to team by default.
+    await this.teamMemberModel.create({
+      teamId: team._id.toString(),
+      workspaceId: dto.workspaceId,
+      userId,
+    });
+
+    return team;
+  }
+
+  async getWorkspaceTeams(workspaceId: string, userId: string): Promise<TeamDocument[]> {
+    const membership = await this.getWorkspaceMember(workspaceId, userId);
+    if (!membership) throw new ForbiddenException('You are not a member of this workspace');
+
+    return this.teamModel.find({ workspaceId }).sort({ name: 1 }).exec();
+  }
+
+  async addMembersToTeam(
+    teamId: string,
+    actorUserId: string,
+    dto: AddTeamMembersDto
+  ): Promise<{ added: number }> {
+    const team = await this.teamModel.findById(teamId).exec();
+    if (!team) throw new NotFoundException('Team not found');
+
+    await this.ensureMemberWithRole(
+      team.workspaceId,
+      actorUserId,
+      rolesWithPermission(Permission.MANAGE_TEAM_MEMBERS)
+    );
+
+    let added = 0;
+    for (const targetUserId of dto.userIds) {
+      const workspaceMember = await this.getWorkspaceMember(team.workspaceId, targetUserId);
+      if (!workspaceMember) {
+        throw new BadRequestException(`User ${targetUserId} is not a workspace member`);
+      }
+      const existing = await this.teamMemberModel
+        .findOne({ teamId, userId: targetUserId })
+        .lean()
+        .exec();
+      if (existing) continue;
+      await this.teamMemberModel.create({
+        teamId,
+        workspaceId: team.workspaceId,
+        userId: targetUserId,
+      });
+      added += 1;
+    }
+
+    return { added };
+  }
+
+  async getTeamMembers(teamId: string, userId: string): Promise<TeamMemberDocument[]> {
+    const team = await this.teamModel.findById(teamId).exec();
+    if (!team) throw new NotFoundException('Team not found');
+
+    const membership = await this.getWorkspaceMember(team.workspaceId, userId);
+    if (!membership) throw new ForbiddenException('You are not a member of this workspace');
+
+    return this.teamMemberModel
+      .find({ teamId })
+      .populate('userId', 'email username firstName lastName avatar')
+      .exec();
+  }
+
+  async getUserTeamIds(workspaceId: string, userId: string): Promise<string[]> {
+    const teams = await this.teamMemberModel
+      .find({ workspaceId, userId })
+      .select('teamId')
+      .lean()
+      .exec();
+    return teams.map((t) => t.teamId);
+  }
+
+  async validateTeamIdsInWorkspace(workspaceId: string, teamIds: string[]): Promise<void> {
+    if (!teamIds.length) return;
+    const count = await this.teamModel
+      .countDocuments({ _id: { $in: teamIds }, workspaceId })
+      .exec();
+    if (count !== teamIds.length) {
+      throw new BadRequestException('One or more teams do not belong to this workspace');
+    }
+  }
+
+  async userHasTeamAccess(workspaceId: string, userId: string, teamIds?: string[]): Promise<boolean> {
+    if (!teamIds || teamIds.length === 0) return true;
+
+    const workspaceMember = await this.getWorkspaceMember(workspaceId, userId);
+    if (!workspaceMember) return false;
+    if (hasPermission(workspaceMember.role as UserRole, Permission.MANAGE_TEAM_MEMBERS)) {
+      return true;
+    }
+
+    const userTeams = await this.getUserTeamIds(workspaceId, userId);
+    return teamIds.some((teamId) => userTeams.includes(teamId));
+  }
+
+  private async canCreateWorkspaceInOrganization(
+    userId: string,
+    organizationId: string
+  ): Promise<boolean> {
+    const org = await this.organizationModel.findById(organizationId).select('ownerId').lean().exec();
+    if (!org) return false;
+    if (org.ownerId === userId) return true;
+
+    const allowedRoles = rolesWithPermission(Permission.CREATE_WORKSPACE);
+    const orgWorkspaces = await this.workspaceModel
+      .find({ organizationId })
+      .select('_id')
+      .lean()
+      .exec();
+    const workspaceIds = orgWorkspaces.map((w) => w._id.toString());
+    if (workspaceIds.length === 0) return false;
+
+    const elevatedMembership = await this.workspaceMemberModel
+      .findOne({
+        workspaceId: { $in: workspaceIds },
+        userId,
+        role: { $in: allowedRoles },
+      })
+      .lean()
+      .exec();
+    return Boolean(elevatedMembership);
   }
 }

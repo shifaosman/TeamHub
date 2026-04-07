@@ -48,5 +48,4 @@ export class Workspace {
 export const WorkspaceSchema = SchemaFactory.createForClass(Workspace);
 
 // Indexes for performance
-WorkspaceSchema.index({ organizationId: 1 });
 WorkspaceSchema.index({ slug: 1, organizationId: 1 }, { unique: true });

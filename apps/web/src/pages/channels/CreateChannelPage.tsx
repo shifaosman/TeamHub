@@ -5,15 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { useTeams } from '@/hooks/useTeams';
 
 export function CreateChannelPage() {
   const navigate = useNavigate();
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const createChannel = useCreateChannel();
+  const { data: teams = [] } = useTeams(workspaceId || '');
   const [formData, setFormData] = useState({
     name: '',
     type: 'public',
     description: '',
+    teamIds: [] as string[],
   });
   const [error, setError] = useState('');
 
@@ -32,6 +35,7 @@ export function CreateChannelPage() {
         name: formData.name,
         type: formData.type as any,
         description: formData.description || undefined,
+        teamIds: formData.teamIds.length ? formData.teamIds : undefined,
       });
       navigate(`/dashboard`);
     } catch (err: any) {
@@ -95,6 +99,32 @@ export function CreateChannelPage() {
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="mt-1"
                   />
+                </div>
+                <div>
+                  <Label>Visible to Teams (optional)</Label>
+                  <div className="mt-2 border border-border rounded-md p-3 max-h-40 overflow-auto space-y-2">
+                    {teams.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No teams yet. Resource will be visible to all workspace members.</p>
+                    ) : (
+                      teams.map((team) => (
+                        <label key={team._id} className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={formData.teamIds.includes(team._id)}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                teamIds: e.target.checked
+                                  ? [...prev.teamIds, team._id]
+                                  : prev.teamIds.filter((id) => id !== team._id),
+                              }))
+                            }
+                          />
+                          <span>{team.name}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
 

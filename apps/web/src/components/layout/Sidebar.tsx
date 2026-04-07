@@ -6,7 +6,7 @@ import { WorkspaceSelector } from '@/components/workspace/WorkspaceSelector';
 import { ChannelList } from '@/components/channels/ChannelList';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Home, Plus, LogOut, MessageSquare, Moon, Sun, FolderKanban, StickyNote, Search, Activity, BarChart3, FolderOpen } from 'lucide-react';
+import { Home, Plus, LogOut, MessageSquare, Moon, Sun, FolderKanban, StickyNote, Search, Activity, BarChart3, FolderOpen, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCommandPaletteContext } from '@/contexts/CommandPaletteContext';
 
@@ -121,6 +121,15 @@ export function Sidebar() {
             >
               <FolderOpen className="h-4 w-4 shrink-0" />
               <span>Files</span>
+            </Link>
+
+            <Link
+              to={`/workspaces/${currentWorkspace._id}/teams`}
+              data-testid="nav-teams"
+              className={navLinkClass(location.pathname.includes('/teams'))}
+            >
+              <Users className="h-4 w-4 shrink-0" />
+              <span>Teams</span>
             </Link>
           </>
         )}

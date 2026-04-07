@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { NotificationType, UserRole } from '@teamhub/shared';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { hasPermission, Permission, rolesWithPermission } from '../common/permissions';
 import { CreateReportDto } from './dto/create-report.dto';
 import { Report, ReportDocument } from './schemas/report.schema';
 
@@ -58,7 +59,7 @@ export class ReportsService {
   }
 
   async getHrReports(userId: string): Promise<ReportDocument[]> {
-    await this.ensureRole(userId, [UserRole.HR, UserRole.SUPERVISOR, UserRole.ADMIN, UserRole.OWNER]);
+    await this.ensureRole(userId, rolesWithPermission(Permission.VIEW_HR_REPORTS));
     return this.reportModel.find().sort({ createdAt: -1 }).limit(200).exec();
   }
 

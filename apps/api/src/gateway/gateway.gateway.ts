@@ -8,13 +8,12 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Injectable, UseGuards, Logger } from '@nestjs/common';
+import { Injectable, UseGuards, Logger, Inject, Optional, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { MessagesService } from '../messages/messages.service';
 import { ChannelsService } from '../channels/channels.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { Inject, Optional } from '@nestjs/common';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -40,6 +39,7 @@ export class GatewayGateway implements OnGatewayConnection, OnGatewayDisconnect 
   constructor(
     private jwtService: JwtService,
     private configService: ConfigService,
+    @Inject(forwardRef(() => MessagesService))
     private messagesService: MessagesService,
     private channelsService: ChannelsService,
     @Optional() private notificationsService?: NotificationsService

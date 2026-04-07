@@ -23,4 +23,3 @@ export const NoteCollaboratorSchema = SchemaFactory.createForClass(NoteCollabora
 
 // Indexes for performance - composite unique index ensures one permission per user per note
 NoteCollaboratorSchema.index({ noteId: 1, userId: 1 }, { unique: true });
-NoteCollaboratorSchema.index({ userId: 1 });

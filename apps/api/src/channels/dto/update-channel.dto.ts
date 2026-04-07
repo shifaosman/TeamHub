@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, MinLength, MaxLength, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, MinLength, MaxLength, IsOptional, IsBoolean, IsArray } from 'class-validator';
 
 export class UpdateChannelDto {
   @ApiProperty({ required: false })
@@ -19,4 +19,10 @@ export class UpdateChannelDto {
   @IsOptional()
   @IsBoolean()
   declare isArchived?: boolean;
+
+  @ApiProperty({ required: false, type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  declare teamIds?: string[];
 }

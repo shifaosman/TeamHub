@@ -11,10 +11,10 @@ import { ChannelMember, ChannelMemberDocument } from './schemas/channel-member.s
 import { CreateChannelDto } from './dto/create-channel.dto';
 import { UpdateChannelDto } from './dto/update-channel.dto';
 import { AddChannelMembersDto } from './dto/add-members.dto';
-import { ChannelType } from '@teamhub/shared';
+import { ChannelType, UserRole } from '@teamhub/shared';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { ActivityService } from '../activity/activity.service';
-import { UserRole } from '@teamhub/shared';
+import { hasPermission, Permission, rolesWithPermission } from '../common/permissions';
 
 @Injectable()
 export class ChannelsService {
@@ -40,6 +40,12 @@ export class ChannelsService {
       throw new ForbiddenException('You are not a member of this workspace');
     }
 
+    if (!hasPermission(member.role as UserRole, Permission.CREATE_CHANNEL)) {
+      throw new ForbiddenException(
+        'You do not have permission to create channels'
+      );
+    }
+
     // Check workspace settings
     if (createChannelDto.type === ChannelType.PUBLIC && !workspace.settings.allowPublicChannels) {
       throw new BadRequestException('Public channels are not allowed in this workspace');
@@ -47,6 +53,13 @@ export class ChannelsService {
 
     if (createChannelDto.type === ChannelType.PRIVATE && !workspace.settings.allowPrivateChannels) {
       throw new BadRequestException('Private channels are not allowed in this workspace');
+    }
+
+    if (createChannelDto.teamIds?.length) {
+      await this.workspacesService.validateTeamIdsInWorkspace(
+        createChannelDto.workspaceId,
+        createChannelDto.teamIds
+      );
     }
 
     // Generate slug from name
@@ -72,6 +85,7 @@ export class ChannelsService {
       slug,
       createdBy: userId,
       memberIds: createChannelDto.memberIds || [userId],
+      teamIds: createChannelDto.teamIds || [],
     });
 
     const savedChannel = await channel.save();
@@ -136,7 +150,19 @@ export class ChannelsService {
       .sort({ createdAt: 1 })
       .exec();
 
-    return channels;
+    const visibleChannels: ChannelDocument[] = [];
+    for (const channel of channels) {
+      const hasTeamAccess = await this.workspacesService.userHasTeamAccess(
+        channel.workspaceId,
+        userId,
+        channel.teamIds
+      );
+      if (hasTeamAccess) {
+        visibleChannels.push(channel);
+      }
+    }
+
+    return visibleChannels;
   }
 
   async findOne(id: string, userId: string): Promise<ChannelDocument> {
@@ -167,13 +193,15 @@ export class ChannelsService {
       throw new ForbiddenException('You are not a member of this workspace');
     }
 
-    const canEdit =
-      channel.createdBy === userId ||
-      workspaceMember.role === UserRole.OWNER ||
-      workspaceMember.role === UserRole.ADMIN;
+    const isCreator = channel.createdBy === userId;
+    const canEdit = isCreator || hasPermission(workspaceMember.role as UserRole, Permission.UPDATE_CHANNEL);
 
     if (!canEdit) {
       throw new ForbiddenException('You do not have permission to edit this channel');
+    }
+
+    if (updateDto.teamIds) {
+      await this.workspacesService.validateTeamIdsInWorkspace(channel.workspaceId, updateDto.teamIds);
     }
 
     Object.assign(channel, updateDto);
@@ -193,7 +221,8 @@ export class ChannelsService {
     }
 
     const canDelete =
-      channel.createdBy === userId || workspaceMember.role === UserRole.OWNER;
+      channel.createdBy === userId ||
+      hasPermission(workspaceMember.role as UserRole, Permission.DELETE_CHANNEL);
 
     if (!canDelete) {
       throw new ForbiddenException('You do not have permission to delete this channel');
@@ -257,8 +286,7 @@ export class ChannelsService {
 
     const canRemove =
       channel.createdBy === removerUserId ||
-      workspaceMember?.role === UserRole.OWNER ||
-      workspaceMember?.role === UserRole.ADMIN ||
+      (workspaceMember && hasPermission(workspaceMember.role as UserRole, Permission.MANAGE_CHANNEL_MEMBERS)) ||
       targetUserId === removerUserId;
 
     if (!canRemove) {
@@ -279,6 +307,18 @@ export class ChannelsService {
       .exec();
   }
 
+  async getChannelMembersSecure(
+    channelId: string,
+    userId: string
+  ): Promise<ChannelMemberDocument[]> {
+    const channel = await this.channelModel.findById(channelId).exec();
+    if (!channel) {
+      throw new NotFoundException(`Channel with ID ${channelId} not found`);
+    }
+    await this.ensureChannelAccess(channel, userId);
+    return this.getChannelMembers(channelId);
+  }
+
   async updateLastRead(channelId: string, userId: string): Promise<void> {
     await this.channelMemberModel
       .findOneAndUpdate(
@@ -287,6 +327,23 @@ export class ChannelsService {
         { upsert: true, new: true }
       )
       .exec();
+  }
+
+  async ensureSendMessagePermission(channelId: string, userId: string): Promise<void> {
+    const channel = await this.channelModel.findById(channelId).exec();
+    if (!channel) {
+      throw new NotFoundException(`Channel with ID ${channelId} not found`);
+    }
+    const workspaceMember = await this.workspacesService.getWorkspaceMember(
+      channel.workspaceId,
+      userId
+    );
+    if (!workspaceMember) {
+      throw new ForbiddenException('You are not a member of this workspace');
+    }
+    if (!hasPermission(workspaceMember.role as UserRole, Permission.SEND_MESSAGE)) {
+      throw new ForbiddenException('You do not have permission to send messages');
+    }
   }
 
   async ensureChannelAccess(channel: ChannelDocument, userId: string): Promise<void> {
@@ -299,6 +356,14 @@ export class ChannelsService {
       if (!workspaceMember) {
         throw new ForbiddenException('You are not a member of this workspace');
       }
+      const hasTeamAccess = await this.workspacesService.userHasTeamAccess(
+        channel.workspaceId,
+        userId,
+        channel.teamIds
+      );
+      if (!hasTeamAccess) {
+        throw new ForbiddenException('You do not have access to this channel');
+      }
       return;
     }
 
@@ -308,6 +373,15 @@ export class ChannelsService {
       .exec();
 
     if (!member) {
+      throw new ForbiddenException('You do not have access to this channel');
+    }
+
+    const hasTeamAccess = await this.workspacesService.userHasTeamAccess(
+      channel.workspaceId,
+      userId,
+      channel.teamIds
+    );
+    if (!hasTeamAccess) {
       throw new ForbiddenException('You do not have access to this channel');
     }
   }

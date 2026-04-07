@@ -25,6 +25,9 @@ export class Note {
 
   @Prop({ default: false, index: true })
   isArchived!: boolean;
+
+  @Prop({ type: [String], default: [], index: true })
+  teamIds!: string[];
 }
 
 export const NoteSchema = SchemaFactory.createForClass(Note);

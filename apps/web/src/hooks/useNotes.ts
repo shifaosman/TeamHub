@@ -10,6 +10,7 @@ export interface Note {
   createdBy: string;
   updatedBy: string;
   isArchived: boolean;
+  teamIds?: string[];
   createdAt: string;
   updatedAt: string;
   createdByUser?: {
@@ -99,6 +100,7 @@ export function useCreateNote() {
       parentId?: string;
       title: string;
       content: string;
+      teamIds?: string[];
     }) => {
       const response = await api.post('/notes', data);
       return response.data;
@@ -121,6 +123,7 @@ export function useUpdateNote() {
       content?: string;
       isArchived?: boolean;
       parentId?: string;
+      teamIds?: string[];
     }) => {
       const response = await api.patch(`/notes/${noteId}`, data);
       return response.data;

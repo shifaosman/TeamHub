@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { GatewayGateway } from './gateway.gateway';
@@ -11,7 +11,7 @@ import { RedisModule } from '../redis/redis.module';
   imports: [
     JwtModule.register({}),
     ConfigModule,
-    MessagesModule,
+    forwardRef(() => MessagesModule),
     ChannelsModule,
     NotificationsModule,
     RedisModule,

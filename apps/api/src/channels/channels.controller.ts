@@ -82,8 +82,8 @@ export class ChannelsController {
   @Get(':id/members')
   @ApiOperation({ summary: 'Get channel members' })
   @ApiParam({ name: 'id', description: 'Channel ID' })
-  getMembers(@Param('id') id: string) {
-    return this.channelsService.getChannelMembers(id);
+  getMembers(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.channelsService.getChannelMembersSecure(id, user.userId);
   }
 
   @Delete(':id/members/:userId')

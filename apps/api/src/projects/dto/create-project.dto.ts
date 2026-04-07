@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength, MinLength, IsArray } from 'class-validator';
 
 export class CreateProjectDto {
   @ApiProperty()
@@ -18,5 +18,11 @@ export class CreateProjectDto {
   @IsString()
   @MaxLength(2000)
   declare description?: string;
+
+  @ApiProperty({ required: false, type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  declare teamIds?: string[];
 }
 

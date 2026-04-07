@@ -49,12 +49,9 @@ WorkspaceInviteSchema.index(
   { workspaceId: 1, email: 1 },
   { partialFilterExpression: { email: { $type: 'string' } } }
 );
-WorkspaceInviteSchema.index({ token: 1 });
-WorkspaceInviteSchema.index({ code: 1 });
-WorkspaceInviteSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-// Generate token before saving
-WorkspaceInviteSchema.pre('save', function (next) {
+// Generate token before validation so `required` checks pass
+WorkspaceInviteSchema.pre('validate', function (next) {
   if (!this.token) {
     this.token = crypto.randomBytes(32).toString('hex');
   }

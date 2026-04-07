@@ -14,7 +14,8 @@ import { WorkspacesService } from '../workspaces/workspaces.service';
 import { ChannelsService } from '../channels/channels.service';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { NotificationType } from '@teamhub/shared';
+import { NotificationType, UserRole } from '@teamhub/shared';
+import { hasPermission, Permission } from '../common/permissions';
 
 @Injectable()
 export class FilesService {
@@ -67,10 +68,12 @@ export class FilesService {
       throw new BadRequestException(`File type ${file.mimetype} is not allowed`);
     }
 
-    // Verify workspace access
     const workspaceMember = await this.workspacesService.getWorkspaceMember(workspaceId, userId);
     if (!workspaceMember) {
       throw new ForbiddenException('You are not a member of this workspace');
+    }
+    if (!hasPermission(workspaceMember.role as UserRole, Permission.UPLOAD_FILE)) {
+      throw new ForbiddenException('You do not have permission to upload files');
     }
 
     // Verify channel access if channelId is provided
@@ -254,6 +257,10 @@ export class FilesService {
     content: string
   ): Promise<FileCommentDocument> {
     const file = await this.findOne(fileId, userId);
+    const workspaceMember = await this.workspacesService.getWorkspaceMember(file.workspaceId, userId);
+    if (workspaceMember && !hasPermission(workspaceMember.role as UserRole, Permission.SEND_MESSAGE)) {
+      throw new ForbiddenException('You do not have permission to comment');
+    }
     const comment = new this.fileCommentModel({ fileId, userId, content });
     const saved = await comment.save();
 
@@ -309,10 +316,10 @@ export class FilesService {
       userId
     );
 
+    const isUploader = file.uploadedBy.toString() === userId;
     const canDelete =
-      file.uploadedBy.toString() === userId ||
-      workspaceMember?.role === 'owner' ||
-      workspaceMember?.role === 'admin';
+      isUploader ||
+      (workspaceMember && hasPermission(workspaceMember.role as UserRole, Permission.DELETE_FILE));
 
     if (!canDelete) {
       throw new ForbiddenException('You do not have permission to delete this file');

@@ -18,5 +18,3 @@ export class Organization {
 export const OrganizationSchema = SchemaFactory.createForClass(Organization);
 
 // Indexes for performance
-OrganizationSchema.index({ ownerId: 1 });
-OrganizationSchema.index({ slug: 1 });

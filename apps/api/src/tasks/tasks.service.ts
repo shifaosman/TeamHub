@@ -1,6 +1,8 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
+  forwardRef,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -8,6 +10,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { NotificationType, UserRole } from '@teamhub/shared';
 import { WorkspacesService } from '../workspaces/workspaces.service';
+import { hasPermission, Permission, rolesWithPermission } from '../common/permissions';
 import { Comment, CommentDocument } from '../comments/schemas/comment.schema';
 import { Project, ProjectDocument } from '../projects/schemas/project.schema';
 import { MessagesService } from '../messages/messages.service';
@@ -31,6 +34,7 @@ export class TasksService {
     @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
     @InjectModel(Comment.name) private commentModel: Model<CommentDocument>,
     private workspacesService: WorkspacesService,
+    @Inject(forwardRef(() => MessagesService))
     private messagesService: MessagesService,
     private notificationsService: NotificationsService,
     private gateway: GatewayGateway,
@@ -535,10 +539,8 @@ export class TasksService {
       throw new ForbiddenException('You are not a member of this workspace');
     }
 
-    const canDelete =
-      task.createdBy === userId ||
-      workspaceMember.role === UserRole.OWNER ||
-      workspaceMember.role === UserRole.ADMIN;
+    const isCreator = task.createdBy === userId;
+    const canDelete = isCreator || hasPermission(workspaceMember.role as UserRole, Permission.DELETE_TASK);
 
     if (!canDelete) {
       throw new ForbiddenException('You do not have permission to delete this task');
@@ -716,10 +718,7 @@ export class TasksService {
       throw new ForbiddenException('You are not a member of this workspace');
     }
 
-    const canBypass =
-      workspaceMember.role === UserRole.OWNER || workspaceMember.role === UserRole.ADMIN;
-
-    if (canBypass) {
+    if (hasPermission(workspaceMember.role as UserRole, Permission.MANAGE_PROJECT_MEMBERS)) {
       return;
     }
 
@@ -734,14 +733,7 @@ export class TasksService {
     if (!workspaceMember) {
       throw new ForbiddenException('You are not a member of this workspace');
     }
-    const role = workspaceMember.role;
-    const allowed = [
-      UserRole.OWNER,
-      UserRole.ADMIN,
-      UserRole.TASK_MANAGER,
-      UserRole.LEADER,
-    ].includes(role as UserRole);
-    if (!allowed) {
+    if (!hasPermission(workspaceMember.role as UserRole, Permission.APPROVE_TASK)) {
       throw new ForbiddenException('Only task manager/admin can perform this action');
     }
   }

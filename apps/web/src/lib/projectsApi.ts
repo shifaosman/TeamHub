@@ -15,6 +15,7 @@ export interface Project {
   approvalRequired?: boolean;
   createdBy: string;
   members: ProjectMember[];
+  teamIds?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -70,6 +71,7 @@ export const projectsApi = {
     workspaceId: string;
     name: string;
     description?: string;
+    teamIds?: string[];
   }): Promise<Project> {
     const response = await api.post('/projects', data);
     return response.data;
@@ -80,7 +82,10 @@ export const projectsApi = {
     return response.data;
   },
 
-  async updateProject(projectId: string, data: { name?: string; description?: string }): Promise<Project> {
+  async updateProject(
+    projectId: string,
+    data: { name?: string; description?: string; teamIds?: string[] }
+  ): Promise<Project> {
     const response = await api.patch(`/projects/${projectId}`, data);
     return response.data;
   },

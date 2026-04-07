@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, MaxLength, MinLength, IsArray } from 'class-validator';
 
 export class UpdateProjectDto {
   @ApiProperty({ required: false, example: 'Website Redesign' })
@@ -19,5 +19,11 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsBoolean()
   declare approvalRequired?: boolean;
+
+  @ApiProperty({ required: false, type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  declare teamIds?: string[];
 }
 

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, MinLength, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, MinLength, IsOptional, IsBoolean, IsArray } from 'class-validator';
 
 export class UpdateNoteDto {
   @ApiProperty({ required: false })
@@ -22,4 +22,10 @@ export class UpdateNoteDto {
   @IsOptional()
   @IsString()
   declare parentId?: string;
+
+  @ApiProperty({ required: false, type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  declare teamIds?: string[];
 }

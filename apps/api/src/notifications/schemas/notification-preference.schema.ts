@@ -31,4 +31,3 @@ export const NotificationPreferenceSchema =
 
 // Indexes for performance - composite unique index ensures one preference per user/workspace/channel
 NotificationPreferenceSchema.index({ userId: 1, workspaceId: 1, channelId: 1 }, { unique: true });
-NotificationPreferenceSchema.index({ userId: 1 });

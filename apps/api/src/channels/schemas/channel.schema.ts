@@ -6,7 +6,7 @@ export type ChannelDocument = HydratedDocument<Channel>;
 
 @Schema({ timestamps: true })
 export class Channel {
-  @Prop({ required: true, index: true })
+  @Prop({ required: true })
   workspaceId!: string;
 
   @Prop({ required: true, trim: true })
@@ -29,6 +29,9 @@ export class Channel {
 
   @Prop({ type: [String], default: [] })
   memberIds!: string[];
+
+  @Prop({ type: [String], default: [], index: true })
+  teamIds!: string[];
 }
 
 export const ChannelSchema = SchemaFactory.createForClass(Channel);

@@ -20,8 +20,9 @@ import { ConvertMessageToTaskDto } from './dto/convert-message-to-task.dto';
 import { ChannelsService } from '../channels/channels.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ActivityService } from '../activity/activity.service';
-import { NotificationType } from '@teamhub/shared';
+import { NotificationType, UserRole } from '@teamhub/shared';
 import { TasksService } from '../tasks/tasks.service';
+import { hasPermission, Permission } from '../common/permissions';
 // @ts-ignore - sanitize-html doesn't have types
 import sanitizeHtml from 'sanitize-html';
 
@@ -41,8 +42,8 @@ export class MessagesService {
   ) {}
 
   async create(userId: string, createMessageDto: CreateMessageDto): Promise<MessageDocument> {
-    // Verify channel access
     const channel = await this.channelsService.findOne(createMessageDto.channelId, userId);
+    await this.channelsService.ensureSendMessagePermission(createMessageDto.channelId, userId);
 
     // Validate that message has either content or attachments
     if (!createMessageDto.content?.trim() && (!createMessageDto.attachments || createMessageDto.attachments.length === 0)) {

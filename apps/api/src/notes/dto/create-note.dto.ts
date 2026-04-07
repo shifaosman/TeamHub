@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, MinLength, IsOptional } from 'class-validator';
+import { IsString, MinLength, IsOptional, IsArray } from 'class-validator';
 
 export class CreateNoteDto {
   @ApiProperty()
@@ -20,4 +20,10 @@ export class CreateNoteDto {
   @ApiProperty({ example: 'Note content here...' })
   @IsString()
   declare content: string;
+
+  @ApiProperty({ required: false, type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  declare teamIds?: string[];
 }

@@ -27,5 +27,4 @@ export const WorkspaceMemberSchema = SchemaFactory.createForClass(WorkspaceMembe
 
 // Indexes for performance - composite unique index ensures one membership per user per workspace
 WorkspaceMemberSchema.index({ workspaceId: 1, userId: 1 }, { unique: true });
-WorkspaceMemberSchema.index({ userId: 1 });
 WorkspaceMemberSchema.index({ workspaceId: 1, role: 1 });

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/useToast';
 import { useCreateProject } from '@/hooks/useProjects';
+import { useTeams } from '@/hooks/useTeams';
 
 interface ProjectCreateDialogProps {
   workspaceId: string;
@@ -12,14 +13,17 @@ interface ProjectCreateDialogProps {
 export function ProjectCreateDialog({ workspaceId, open, onOpenChange }: ProjectCreateDialogProps) {
   const { toast } = useToast();
   const createProject = useCreateProject();
+  const { data: teams = [] } = useTeams(workspaceId);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [teamIds, setTeamIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (open) return;
     setName('');
     setDescription('');
+    setTeamIds([]);
   }, [open]);
 
   const canSubmit = workspaceId && name.trim().length > 0 && !createProject.isPending;
@@ -30,6 +34,7 @@ export function ProjectCreateDialog({ workspaceId, open, onOpenChange }: Project
         workspaceId,
         name: name.trim(),
         description: description.trim() ? description.trim() : undefined,
+        teamIds: teamIds.length ? teamIds : undefined,
       });
       toast({ title: 'Project created', description: 'Your project is ready.', variant: 'success' });
       onOpenChange(false);
@@ -72,6 +77,32 @@ export function ProjectCreateDialog({ workspaceId, open, onOpenChange }: Project
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What’s this project about?"
             />
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-sm font-medium">Visible to Teams (optional)</div>
+            <div className="max-h-32 overflow-auto rounded-md border border-border p-2 space-y-2">
+              {teams.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No teams yet. Project will be visible to all workspace members.
+                </p>
+              ) : (
+                teams.map((team) => (
+                  <label key={team._id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={teamIds.includes(team._id)}
+                      onChange={(e) =>
+                        setTeamIds((prev) =>
+                          e.target.checked ? [...prev, team._id] : prev.filter((id) => id !== team._id)
+                        )
+                      }
+                    />
+                    <span>{team.name}</span>
+                  </label>
+                ))
+              )}
+            </div>
           </div>
         </div>
 

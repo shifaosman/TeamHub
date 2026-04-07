@@ -30,5 +30,4 @@ export const ChannelMemberSchema = SchemaFactory.createForClass(ChannelMember);
 
 // Indexes for performance - composite unique index ensures one membership per user per channel
 ChannelMemberSchema.index({ channelId: 1, userId: 1 }, { unique: true });
-ChannelMemberSchema.index({ userId: 1 });
 ChannelMemberSchema.index({ channelId: 1, lastReadAt: 1 });
