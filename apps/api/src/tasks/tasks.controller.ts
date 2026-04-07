@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Put,
   Post,
   Query,
   UseGuards,
@@ -21,6 +22,7 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { UpdateTaskAssigneeDto } from './dto/update-task-assignee.dto';
 import { UpdateTaskDueDto } from './dto/update-task-due.dto';
 import { UpdateTaskWatchersDto } from './dto/update-task-watchers.dto';
+import { EditTaskBeforeApprovalDto } from './dto/edit-task-before-approval.dto';
 import { TasksService } from './tasks.service';
 
 @ApiTags('tasks')
@@ -108,6 +110,28 @@ export class TasksController {
   @ApiOperation({ summary: 'Reorder tasks (drag & drop)' })
   reorder(@CurrentUser() user: any, @Body() dto: ReorderTasksDto) {
     return this.tasksService.reorder(user.userId, dto);
+  }
+
+  @Post(':id/approve')
+  @ApiOperation({ summary: 'Approve a pending task' })
+  approve(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.tasksService.approve(id, user.userId);
+  }
+
+  @Post(':id/reject')
+  @ApiOperation({ summary: 'Reject a pending task' })
+  reject(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.tasksService.reject(id, user.userId);
+  }
+
+  @Put(':id/edit-before-approval')
+  @ApiOperation({ summary: 'Edit task while pending approval' })
+  editBeforeApproval(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() dto: EditTaskBeforeApprovalDto
+  ) {
+    return this.tasksService.editBeforeApproval(id, user.userId, dto);
   }
 }
 

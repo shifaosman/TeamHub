@@ -15,6 +15,9 @@ export class Project {
   @Prop({ maxlength: 2000 })
   description?: string;
 
+  @Prop({ default: false })
+  approvalRequired!: boolean;
+
   @Prop({ required: true, index: true })
   createdBy!: string;
 

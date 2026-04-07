@@ -6,6 +6,7 @@ export type TaskDocument = HydratedDocument<Task>;
 export type TaskStatus = 'todo' | 'in-progress' | 'done';
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type TaskApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 @Schema({ timestamps: true })
 export class Task {
@@ -18,6 +19,9 @@ export class Task {
   // Task created from a message (optional)
   @Prop({ index: true })
   sourceMessageId?: string;
+
+  @Prop({ index: true })
+  createdFromMessageId?: string;
 
   @Prop({ index: true })
   sourceChannelId?: string;
@@ -42,6 +46,20 @@ export class Task {
 
   @Prop({ type: String, default: null, index: true })
   assigneeId?: string | null;
+
+  @Prop({
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'approved',
+    index: true,
+  })
+  approvalStatus!: TaskApprovalStatus;
+
+  @Prop({ type: String })
+  approvedBy?: string;
+
+  @Prop({ default: false, index: true })
+  approvalRequired!: boolean;
 
   @Prop({ type: [String], default: [], index: true })
   watcherIds!: string[];

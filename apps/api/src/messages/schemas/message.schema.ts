@@ -52,6 +52,12 @@ export class Message {
 
   @Prop({ type: Object })
   metadata?: Record<string, unknown>;
+
+  @Prop({ default: false })
+  isTaskCandidate!: boolean;
+
+  @Prop({ default: false })
+  convertedToTask!: boolean;
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);

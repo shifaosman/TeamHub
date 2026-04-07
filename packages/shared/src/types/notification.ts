@@ -11,6 +11,11 @@ export enum NotificationType {
   TASK_CREATED = 'task_created',
   TASK_UPDATED = 'task_updated',
   TASK_DUE_SOON = 'task_due_soon',
+  TASK_APPROVAL_NEEDED = 'task_approval_needed',
+  TASK_APPROVED = 'task_approved',
+  TASK_REJECTED = 'task_rejected',
+  REPORT_SUBMITTED = 'report_submitted',
+  MESSAGE_CONVERTED_TO_TASK = 'message_converted_to_task',
   NOTE_UPDATED = 'note_updated',
 }
 

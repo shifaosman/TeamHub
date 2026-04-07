@@ -11,8 +11,12 @@ export interface Task {
   assigneeId?: string | null;
   watcherIds?: string[];
   sourceMessageId?: string;
+  createdFromMessageId?: string;
   sourceChannelId?: string;
   sourceWorkspaceId?: string;
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  approvedBy?: string;
+  approvalRequired?: boolean;
   dueAt?: string;
   createdBy: string;
   order?: number;

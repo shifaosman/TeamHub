@@ -190,6 +190,16 @@ export class WorkspacesService {
       .exec();
   }
 
+  async getWorkspaceMembersByRoles(
+    workspaceId: string,
+    roles: UserRole[]
+  ): Promise<WorkspaceMemberDocument[]> {
+    return this.workspaceMemberModel
+      .find({ workspaceId, role: { $in: roles } })
+      .populate('userId', 'email username firstName lastName avatar')
+      .exec();
+  }
+
   async getWorkspaceMember(
     workspaceId: string,
     userId: string

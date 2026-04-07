@@ -1,4 +1,6 @@
 export enum ChannelType {
+  TEAM = 'team',
+  PROJECT = 'project',
   PUBLIC = 'public',
   PRIVATE = 'private',
   DM = 'dm',

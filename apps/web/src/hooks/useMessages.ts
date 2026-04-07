@@ -15,6 +15,8 @@ export interface Message {
   reactions: Array<{ emoji: string; userIds: string[] }>;
   attachments: string[];
   mentions: string[];
+  isTaskCandidate?: boolean;
+  convertedToTask?: boolean;
   createdAt: string;
   updatedAt: string;
   user?: {
@@ -108,6 +110,29 @@ export function useAddReaction() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['messages', data.channelId] });
       queryClient.invalidateQueries({ queryKey: ['messages', 'thread'] });
+    },
+  });
+}
+
+export function useConvertMessageToTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: {
+      messageId: string;
+      projectId: string;
+      title?: string;
+      assigneeId?: string | null;
+    }) => {
+      const response = await api.post(`/messages/${data.messageId}/convert-to-task`, {
+        projectId: data.projectId,
+        title: data.title,
+        assigneeId: data.assigneeId,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
 }

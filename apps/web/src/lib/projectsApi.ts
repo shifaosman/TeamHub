@@ -12,6 +12,7 @@ export interface Project {
   workspaceId: string;
   name: string;
   description?: string;
+  approvalRequired?: boolean;
   createdBy: string;
   members: ProjectMember[];
   createdAt: string;
@@ -27,6 +28,7 @@ export interface Task {
   projectId: string;
   workspaceId: string;
   sourceMessageId?: string;
+  createdFromMessageId?: string;
   sourceChannelId?: string;
   sourceWorkspaceId?: string;
   title: string;
@@ -35,6 +37,9 @@ export interface Task {
   priority?: TaskPriority;
   labels?: string[];
   assigneeId?: string | null;
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  approvedBy?: string;
+  approvalRequired?: boolean;
   watcherIds?: string[];
   dueAt?: string;
   createdBy: string;
@@ -77,6 +82,11 @@ export const projectsApi = {
 
   async updateProject(projectId: string, data: { name?: string; description?: string }): Promise<Project> {
     const response = await api.patch(`/projects/${projectId}`, data);
+    return response.data;
+  },
+
+  async updateProjectApprovalSetting(projectId: string, approvalRequired: boolean): Promise<Project> {
+    const response = await api.patch(`/projects/${projectId}`, { approvalRequired });
     return response.data;
   },
 
@@ -157,6 +167,24 @@ export const projectsApi = {
 
   async updateTaskDue(taskId: string, data: { dueAt?: string | null }): Promise<Task> {
     const response = await api.patch(`/tasks/${taskId}/due`, data);
+    return response.data;
+  },
+
+  async approveTask(taskId: string): Promise<Task> {
+    const response = await api.post(`/tasks/${taskId}/approve`);
+    return response.data;
+  },
+
+  async rejectTask(taskId: string): Promise<Task> {
+    const response = await api.post(`/tasks/${taskId}/reject`);
+    return response.data;
+  },
+
+  async editTaskBeforeApproval(
+    taskId: string,
+    data: { title?: string; description?: string; priority?: TaskPriority }
+  ): Promise<Task> {
+    const response = await api.put(`/tasks/${taskId}/edit-before-approval`, data);
     return response.data;
   },
 

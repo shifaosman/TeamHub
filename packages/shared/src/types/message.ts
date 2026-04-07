@@ -13,6 +13,8 @@ export interface Message {
   attachments: string[];
   mentions: string[];
   metadata?: Record<string, unknown>;
+  isTaskCandidate?: boolean;
+  convertedToTask?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

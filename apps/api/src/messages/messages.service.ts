@@ -16,10 +16,12 @@ import { CreateMessageDto } from './dto/create-message.dto';
 import { UpdateMessageDto } from './dto/update-message.dto';
 import { AddReactionDto } from './dto/add-reaction.dto';
 import { SearchMessagesDto } from './dto/search-messages.dto';
+import { ConvertMessageToTaskDto } from './dto/convert-message-to-task.dto';
 import { ChannelsService } from '../channels/channels.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationType } from '@teamhub/shared';
+import { TasksService } from '../tasks/tasks.service';
 // @ts-ignore - sanitize-html doesn't have types
 import sanitizeHtml from 'sanitize-html';
 
@@ -33,7 +35,9 @@ export class MessagesService {
     private channelsService: ChannelsService,
     private activityService: ActivityService,
     @Optional() @Inject(forwardRef(() => NotificationsService))
-    private notificationsService?: NotificationsService
+    private notificationsService?: NotificationsService,
+    @Optional() @Inject(forwardRef(() => TasksService))
+    private tasksService?: TasksService
   ) {}
 
   async create(userId: string, createMessageDto: CreateMessageDto): Promise<MessageDocument> {
@@ -435,6 +439,43 @@ export class MessagesService {
       // Return 0 if there's any error (e.g., channel not found, access denied)
       return 0;
     }
+  }
+
+  async convertToTask(
+    messageId: string,
+    userId: string,
+    dto: ConvertMessageToTaskDto
+  ): Promise<{ taskId: string; messageId: string }> {
+    if (!this.tasksService) {
+      throw new BadRequestException('Task conversion is not available');
+    }
+    const message = await this.findOne(messageId, userId);
+    if (message.convertedToTask) {
+      throw new BadRequestException('Message already converted to task');
+    }
+    const task = await this.tasksService.createFromMessage(userId, {
+      messageId,
+      projectId: dto.projectId,
+      title: dto.title || (message.content || '').trim().slice(0, 120),
+      assigneeId: dto.assigneeId,
+      status: 'todo',
+    });
+    message.isTaskCandidate = true;
+    message.convertedToTask = true;
+    await message.save();
+
+    if (this.notificationsService) {
+      await this.notificationsService.create({
+        userId,
+        workspaceId: message.workspaceId,
+        type: NotificationType.MESSAGE_CONVERTED_TO_TASK,
+        title: 'Message converted to task',
+        body: task.title,
+        link: `/projects/${task.projectId}?taskId=${task._id.toString()}`,
+        metadata: { taskId: task._id.toString(), messageId },
+      });
+    }
+    return { taskId: task._id.toString(), messageId };
   }
 
   private extractMentions(content: string): string[] {

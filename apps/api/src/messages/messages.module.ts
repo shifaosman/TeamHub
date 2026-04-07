@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MessagesService } from './messages.service';
 import { MessagesController } from './messages.controller';
@@ -8,6 +8,7 @@ import { Bookmark, BookmarkSchema } from './schemas/bookmark.schema';
 import { ChannelsModule } from '../channels/channels.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ActivityModule } from '../activity/activity.module';
+import { TasksModule } from '../tasks/tasks.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ActivityModule } from '../activity/activity.module';
     ChannelsModule,
     NotificationsModule,
     ActivityModule,
+    forwardRef(() => TasksModule),
   ],
   providers: [MessagesService],
   controllers: [MessagesController],

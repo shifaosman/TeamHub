@@ -17,6 +17,7 @@ import { CreateMessageDto } from './dto/create-message.dto';
 import { UpdateMessageDto } from './dto/update-message.dto';
 import { AddReactionDto } from './dto/add-reaction.dto';
 import { SearchMessagesDto } from './dto/search-messages.dto';
+import { ConvertMessageToTaskDto } from './dto/convert-message-to-task.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
@@ -144,5 +145,15 @@ export class MessagesController {
   @ApiOperation({ summary: 'Search messages' })
   search(@CurrentUser() user: any, @Body() searchDto: SearchMessagesDto) {
     return this.messagesService.search(searchDto, user.userId);
+  }
+
+  @Post(':id/convert-to-task')
+  @ApiOperation({ summary: 'Convert message to task' })
+  convertToTask(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Body() dto: ConvertMessageToTaskDto
+  ) {
+    return this.messagesService.convertToTask(id, user.userId, dto);
   }
 }

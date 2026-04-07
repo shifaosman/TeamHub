@@ -21,6 +21,7 @@ import { UpdateTaskAssigneeDto } from './dto/update-task-assignee.dto';
 import { UpdateTaskDueDto } from './dto/update-task-due.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { UpdateTaskWatchersDto } from './dto/update-task-watchers.dto';
+import { EditTaskBeforeApprovalDto } from './dto/edit-task-before-approval.dto';
 import { Task, TaskDocument } from './schemas/task.schema';
 
 @Injectable()
@@ -73,6 +74,9 @@ export class TasksService {
       priority: dto.priority ?? 'medium',
       labels: dto.labels ?? [],
       assigneeId: dto.assigneeId ?? null,
+      approvalRequired: project.approvalRequired ?? false,
+      approvalStatus: project.approvalRequired ? 'pending' : 'approved',
+      approvedBy: project.approvalRequired ? undefined : 'system',
       dueAt: dto.dueAt ? new Date(dto.dueAt) : undefined,
       watcherIds: [],
       createdBy: userId,
@@ -80,6 +84,19 @@ export class TasksService {
     });
 
     const saved = await task.save();
+
+    if (saved.approvalRequired) {
+      await this.notifyTaskManagers(
+        saved.workspaceId,
+        'Task approval required',
+        saved.title,
+        `/projects/${saved.projectId}?taskId=${saved._id.toString()}`,
+        {
+          taskId: saved._id.toString(),
+          projectId: saved.projectId,
+        }
+      );
+    }
 
     await this.activityService.record({
       workspaceId: saved.workspaceId,
@@ -134,9 +151,13 @@ export class TasksService {
       sourceWorkspaceId: message.workspaceId,
       sourceChannelId: message.channelId,
       sourceMessageId: dto.messageId,
+      createdFromMessageId: dto.messageId,
       title,
       status,
       assigneeId: dto.assigneeId ?? null,
+      approvalRequired: project.approvalRequired ?? false,
+      approvalStatus: project.approvalRequired ? 'pending' : 'approved',
+      approvedBy: project.approvalRequired ? undefined : 'system',
       watcherIds: [],
       createdBy: userId,
       order: nextOrder,
@@ -645,6 +666,47 @@ export class TasksService {
     return { updated: bulkOps.length };
   }
 
+  async approve(id: string, userId: string): Promise<TaskDocument> {
+    const task = await this.taskModel.findById(id).exec();
+    if (!task) throw new NotFoundException('Task not found');
+    await this.ensureTaskManagerOrAdmin(task.workspaceId, userId);
+    if (!task.approvalRequired) return task;
+    task.approvalStatus = 'approved';
+    task.approvedBy = userId;
+    const saved = await task.save();
+    await this.notifyTaskLifecycle(saved, NotificationType.TASK_APPROVED, 'Task approved');
+    return saved;
+  }
+
+  async reject(id: string, userId: string): Promise<TaskDocument> {
+    const task = await this.taskModel.findById(id).exec();
+    if (!task) throw new NotFoundException('Task not found');
+    await this.ensureTaskManagerOrAdmin(task.workspaceId, userId);
+    if (!task.approvalRequired) return task;
+    task.approvalStatus = 'rejected';
+    task.approvedBy = userId;
+    const saved = await task.save();
+    await this.notifyTaskLifecycle(saved, NotificationType.TASK_REJECTED, 'Task rejected');
+    return saved;
+  }
+
+  async editBeforeApproval(
+    id: string,
+    userId: string,
+    dto: EditTaskBeforeApprovalDto
+  ): Promise<TaskDocument> {
+    const task = await this.taskModel.findById(id).exec();
+    if (!task) throw new NotFoundException('Task not found');
+    await this.ensureTaskManagerOrAdmin(task.workspaceId, userId);
+    if (!task.approvalRequired || task.approvalStatus !== 'pending') {
+      throw new BadRequestException('Task is not pending approval');
+    }
+    if (dto.title !== undefined) task.title = dto.title;
+    if (dto.description !== undefined) task.description = dto.description;
+    if (dto.priority !== undefined) task.priority = dto.priority;
+    return task.save();
+  }
+
   private async ensureProjectAccess(project: ProjectDocument, userId: string): Promise<void> {
     const workspaceMember = await this.workspacesService.getWorkspaceMember(
       project.workspaceId,
@@ -665,6 +727,77 @@ export class TasksService {
     if (!isProjectMember) {
       throw new ForbiddenException('You are not a member of this project');
     }
+  }
+
+  private async ensureTaskManagerOrAdmin(workspaceId: string, userId: string): Promise<void> {
+    const workspaceMember = await this.workspacesService.getWorkspaceMember(workspaceId, userId);
+    if (!workspaceMember) {
+      throw new ForbiddenException('You are not a member of this workspace');
+    }
+    const role = workspaceMember.role;
+    const allowed = [
+      UserRole.OWNER,
+      UserRole.ADMIN,
+      UserRole.TASK_MANAGER,
+      UserRole.LEADER,
+    ].includes(role as UserRole);
+    if (!allowed) {
+      throw new ForbiddenException('Only task manager/admin can perform this action');
+    }
+  }
+
+  private async notifyTaskLifecycle(
+    task: TaskDocument,
+    type: NotificationType,
+    title: string
+  ): Promise<void> {
+    const recipients = new Set<string>([
+      task.createdBy,
+      ...(task.assigneeId ? [task.assigneeId] : []),
+      ...(task.watcherIds ?? []),
+    ]);
+    const userIds = Array.from(recipients).filter(Boolean);
+    if (userIds.length === 0) return;
+    await this.notificationsService.createForUsers(
+      userIds,
+      task.workspaceId,
+      type,
+      title,
+      task.title,
+      `/projects/${task.projectId}?taskId=${task._id.toString()}`,
+      { taskId: task._id.toString(), projectId: task.projectId }
+    );
+  }
+
+  private async notifyTaskManagers(
+    workspaceId: string,
+    title: string,
+    body: string,
+    link: string,
+    metadata: Record<string, unknown>
+  ): Promise<void> {
+    const managers = await this.workspacesService.getWorkspaceMembersByRoles(workspaceId, [
+      UserRole.TASK_MANAGER,
+      UserRole.LEADER,
+      UserRole.OWNER,
+      UserRole.ADMIN,
+    ]);
+    const managerIds = managers.map((m) => {
+      const userRef = m.userId as any;
+      return typeof userRef === 'object' && userRef?._id
+        ? userRef._id.toString()
+        : String(userRef);
+    });
+    if (managerIds.length === 0) return;
+    await this.notificationsService.createForUsers(
+      managerIds,
+      workspaceId,
+      NotificationType.TASK_APPROVAL_NEEDED,
+      title,
+      body,
+      link,
+      metadata
+    );
   }
 }
 

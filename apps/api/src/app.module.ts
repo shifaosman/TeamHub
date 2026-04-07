@@ -20,6 +20,8 @@ import { TasksModule } from './tasks/tasks.module';
 import { CommentsModule } from './comments/comments.module';
 import { ActivityModule } from './activity/activity.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { ReportsModule } from './reports/reports.module';
+import { OversightModule } from './oversight/oversight.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -74,6 +76,8 @@ import configuration from './config/configuration';
     CommentsModule,
     ActivityModule,
     AnalyticsModule,
+    ReportsModule,
+    OversightModule,
   ],
 })
 export class AppModule {}

@@ -188,8 +188,17 @@ export function MessageList({ channelId }: MessageListProps) {
                       Reply
                     </Button>
                     {currentWorkspace && (
-                      <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setSelectedMessageId(message._id); setCreateOpen(true); }}>
-                        Create task
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs"
+                        disabled={Boolean(message.convertedToTask)}
+                        onClick={() => {
+                          setSelectedMessageId(message._id);
+                          setCreateOpen(true);
+                        }}
+                      >
+                        {message.convertedToTask ? 'Converted' : 'Convert to task'}
                       </Button>
                     )}
                     <div className="relative">
